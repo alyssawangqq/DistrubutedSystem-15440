@@ -1,0 +1,114 @@
+Test: 440ls -l .                  fail
+client exit value 0
+client stdout:
+--------start--------
+---------end---------
+client stderr:
+--------start--------
+Got environment variable serverport15440: 13887
+Init mylib
+mylib: open called for path .
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries called for fd 5
+mylib: getdirentries ca---------end---------
+server stdout:
+--------start--------
+open
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+getdirentries
+g---------end---------
+server stderr:
+--------start--------
+./auto/grade.sh: line 69: 17818 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
