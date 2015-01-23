@@ -74,7 +74,7 @@ int (*orig_close)(int fildes);
 ssize_t (*orig_read)(int fildes, void *buf, size_t nbyte);
 ssize_t (*orig_write)(int fildes, const void *buf, size_t nbyte);
 off_t (*orig_lseek)(int fildes, off_t offset, int whence);
-int (*orig_stat)(const char *restrict path, struct stat *restrict buf);
+int (*orig_stat)(const char *path, struct stat *buf);
 int (*orig_unlink)(const char *path);
 ssize_t (*orig_getdirentries)(int fd, char *buf, size_t nbytes , off_t *basep);
 struct dirtreenode* (*orig_getdirtree)(const char *path);
@@ -119,7 +119,7 @@ off_t lseek(int fildes, off_t offset, int whence) {
   return orig_lseek(fildes, offset, whence);
 }
 
-int stat(const char *restrict path, struct stat *restrict buf) {
+int stat(const char *path, struct stat *buf) {
 	fprintf(stderr, "mylib: stat called for path %s", path);
   send_to_server("stat\n");
   return orig_stat(path, buf);
@@ -132,9 +132,9 @@ int unlink(const char *path) {
 }
 
 ssize_t getdirentries(int fd, char *buf, size_t nbytes , off_t *basep) {
-	fprintf(stderr, "mylib: getdirentries called for fd %d\n", fd);
+	fprintf(stderr, "mylib: orig_getdirentries called for fd %d\n", fd);
   send_to_server("getdirentries\n");
-  return getdirentries(fd, buf, nbytes, basep);
+  return orig_getdirentries(fd, buf, nbytes, basep);
 }
 
 struct dirtreenode* getdirtree(const char *path) {
@@ -146,7 +146,7 @@ struct dirtreenode* getdirtree(const char *path) {
 void freedirtree(struct dirtreenode* dt) {
 	fprintf(stderr, "mylib: freedirtree called for path %s\n", dt->name);
   send_to_server("freedirtree\n");
-  freedirtree(dt);
+  orig_freedirtree(dt);
 }
 
 // This function is automatically called when program is started

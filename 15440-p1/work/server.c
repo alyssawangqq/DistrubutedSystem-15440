@@ -59,8 +59,9 @@ int main(int argc, char**argv) {
 		if (rv<0) err(1,0);
 		close(sessfd);
 	}
-	
+
 	// close socket
+	printf("server closed");
 	close(sockfd);
 
 	return 0;
