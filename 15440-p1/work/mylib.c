@@ -79,6 +79,7 @@ int (*orig_unlink)(const char *path);
 ssize_t (*orig_getdirentries)(int fd, char *buf, size_t nbytes , off_t *basep);
 struct dirtreenode* (*orig_getdirtree)(const char *path);
 void (*orig_freedirtree)(struct dirtreenode* dt);
+int (*orig_xstat)(int ver, const char * path, struct stat * stat_buf);
 
 // This is our replacement for the open function from libc.
 int open(const char *pathname, int flags, ...) {
@@ -149,6 +150,12 @@ void freedirtree(struct dirtreenode* dt) {
   orig_freedirtree(dt);
 }
 
+int __xstat(int ver, const char * path, struct stat * stat_buf) {
+	fprintf(stderr, "mylib: __xstat called for path %s", path);
+  send_to_server("__xstat\n");
+	return orig_xstat(ver, path, stat_buf);
+}
+
 // This function is automatically called when program is started
 void _init(void) {
 	// set function pointer orig_open to point to the original open function
@@ -157,7 +164,7 @@ void _init(void) {
   orig_read = dlsym(RTLD_NEXT, "read");
   orig_write = dlsym(RTLD_NEXT, "write");
   orig_lseek = dlsym(RTLD_NEXT, "lseek");
-  orig_stat = dlsym(RTLD_NEXT, "stat");
+  orig_xstat = dlsym(RTLD_NEXT, "__xstat");
   orig_unlink = dlsym(RTLD_NEXT, "unlink");
   orig_getdirentries = dlsym(RTLD_NEXT, "getdirentries");
   orig_getdirtree = dlsym(RTLD_NEXT, "getdirtree");
