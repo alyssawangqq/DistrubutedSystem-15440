@@ -1,7 +1,44 @@
+Test: 440read foo 3 6             fail
+client exit value 0
+client stdout:
+--------start--------
+Got environment variable server15440: 127.0.0.1
+lo Wor---------end---------
+client stderr:
+--------start--------
+Got environment variable serverport15440: 13887
+Init mylib
+mylib: open called for path foo
+mylib: lseek called for fd 5
+mylib: read called for fd 5
+mylib: close called for fd 5
+---------end---------
+server stdout:
+--------start--------
+open
+lseek
+read
+close
+---------end---------
+server stderr:
+--------start--------
+./auto/grade.sh: line 34: 29748 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
+
+
+
+
+
 Test: 440ls -l .                  fail
 client exit value 0
 client stdout:
 --------start--------
+.                   	<DIR>
+..                  	<DIR>
+Got environment variable server15440: 127.0.0.1
+bar                 	26
+foo                 	13
+subdir              	<DIR>
 ---------end---------
 client stderr:
 --------start--------
@@ -10,105 +47,47 @@ Init mylib
 mylib: open called for path .
 mylib: getdirentries called for fd 5
 mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries called for fd 5
-mylib: getdirentries ca---------end---------
+mylib: close called for fd 5
+---------end---------
 server stdout:
 --------start--------
 open
 getdirentries
 getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-getdirentries
-g---------end---------
+close
+---------end---------
 server stderr:
 --------start--------
-./auto/grade.sh: line 69: 17818 Terminated              stdbuf -e0 -o0 ../build/server
+./auto/grade.sh: line 69: 29771 Terminated              stdbuf -e0 -o0 ../build/server
+
+
+
+
+
+
+
+Test: 440tree .                   fail
+client exit value 0
+client stdout:
+--------start--------
+Got environment variable server15440: 127.0.0.1
+.
+`-subdir
+---------end---------
+client stderr:
+--------start--------
+Got environment variable serverport15440: 13887
+Init mylib
+mylib: orig_getdirtree called for path .
+mylib: freedirtree called for path .
+---------end---------
+server stdout:
+--------start--------
+getdirtree
+freedirtree
+---------end---------
+server stderr:
+--------start--------
+./auto/grade.sh: line 88: 29785 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
 ---------end---------
