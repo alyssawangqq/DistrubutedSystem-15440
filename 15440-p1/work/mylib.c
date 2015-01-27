@@ -23,9 +23,9 @@ void init_socket() {
   
   // Get environment variable indicating the ip address of the server
   serverip = getenv("server15440");
-  if (serverip) printf("Got environment variable server15440: %s\n", serverip);
+  if (serverip) fprintf(stderr ,"Got environment variable server15440: %s\n", serverip);
   else {
-    printf("Environment variable server15440 not found.  Using 127.0.0.1\n");
+    printf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
     serverip = "127.0.0.1";
   }
   
@@ -74,7 +74,7 @@ int (*orig_close)(int fildes);
 ssize_t (*orig_read)(int fildes, void *buf, size_t nbyte);
 ssize_t (*orig_write)(int fildes, const void *buf, size_t nbyte);
 off_t (*orig_lseek)(int fildes, off_t offset, int whence);
-int (*orig_stat)(const char *path, struct stat *buf);
+//int (*orig_stat)(const char *path, struct stat *buf);
 int (*orig_unlink)(const char *path);
 ssize_t (*orig_getdirentries)(int fd, char *buf, size_t nbytes , off_t *basep);
 struct dirtreenode* (*orig_getdirtree)(const char *path);
@@ -120,11 +120,11 @@ off_t lseek(int fildes, off_t offset, int whence) {
   return orig_lseek(fildes, offset, whence);
 }
 
-int stat(const char *path, struct stat *buf) {
-	fprintf(stderr, "mylib: stat called for path %s", path);
-  send_to_server("stat\n");
-  return orig_stat(path, buf);
-}
+//int stat(const char *path, struct stat *buf) {
+//	fprintf(stderr, "mylib: stat called for path %s", path);
+//  send_to_server("stat\n");
+//  return orig_stat(path, buf);
+//}
 
 int unlink(const char *path) {
 	fprintf(stderr, "mylib: unlink called for path %s\n", path);
@@ -152,6 +152,7 @@ void freedirtree(struct dirtreenode* dt) {
 
 int __xstat(int ver, const char * path, struct stat * stat_buf) {
 	fprintf(stderr, "mylib: __xstat called for path %s", path);
+  //send_to_server("stat\n");
   send_to_server("__xstat\n");
 	return orig_xstat(ver, path, stat_buf);
 }
