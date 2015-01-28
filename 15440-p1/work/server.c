@@ -51,8 +51,10 @@ int main(int argc, char**argv) {
 
 		// get messages and send replies to this client, until it goes away
 		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
-			buf[rv]=0;    // null terminate string to print
-			printf("%s", buf);
+			buf[rv]=0;		// null terminate string to print
+			if(buf == "open") {
+				printf("is openg");
+			}
 		}
 
 		// either client closed connection, or error

@@ -1,4 +1,4 @@
-all: mylib.so server dirtree_test
+all: mylib.so server
 
 mylib.o: mylib.c
 		gcc -Wall -fPIC -DPIC -c mylib.c -L../lib
