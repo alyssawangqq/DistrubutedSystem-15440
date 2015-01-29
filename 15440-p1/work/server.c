@@ -14,19 +14,19 @@ int main(int argc, char**argv) {
 	char buf[MAXMSGLEN+1];
 	char *serverport;
 	unsigned short port;
-	int sockfd, sessfd, rv, i;
+	int sockfd, sessfd, rv;
 	struct sockaddr_in srv, cli;
 	socklen_t sa_size;
-
+	
 	// Get environment variable indicating the port of the server
 	serverport = getenv("serverport15440");
 	if (serverport) port = (unsigned short)atoi(serverport);
 	else port=15440;
-
+	
 	// Create socket
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);	// TCP/IP socket
 	if (sockfd<0) err(1, 0);			// in case of error
-
+	
 	// setup address structure to indicate server port
 	memset(&srv, 0, sizeof(srv));			// clear it first
 	srv.sin_family = AF_INET;			// IP family
@@ -36,25 +36,33 @@ int main(int argc, char**argv) {
 	// bind to our port
 	rv = bind(sockfd, (struct sockaddr*)&srv, sizeof(struct sockaddr));
 	if (rv<0) err(1,0);
-
+	
 	// start listening for connections
 	rv = listen(sockfd, 5);
 	if (rv<0) err(1,0);
-
+	
 	// main server loop, handle clients one at a time, quit after 10 clients
-	for(i=0; i<10; i++ ) {
-
+  while (1) {
+		
 		// wait for next client, get session socket
 		sa_size = sizeof(struct sockaddr_in);
 		sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
 		if (sessfd<0) err(1,0);
-
+		
 		// get messages and send replies to this client, until it goes away
 		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
 			buf[rv]=0;		// null terminate string to print
-			printf("%s", buf);
-			if(strcmp(buf, "open\n") == 0) {
-				//get open , use open
+			if(strcmp(buf, "open") == 0) {
+				system("open");
+				//printf("is open");
+			}
+			if(strcmp(buf, "write") == 0) {
+				//printf("is open");
+				system("write");
+			}
+			if(strcmp(buf, "close") == 0) {
+				system("close");
+				//printf("is open");
 			}
 		}
 
@@ -63,8 +71,8 @@ int main(int argc, char**argv) {
 		close(sessfd);
 	}
 
-	printf("server shutting down cleanly\n");
 	// close socket
+	printf("server closed");
 	close(sockfd);
 
 	return 0;
