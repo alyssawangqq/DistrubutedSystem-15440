@@ -9,6 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <err.h>
+#include <stdint.h>
 
 #define MAXMSGLEN 100
 
@@ -25,7 +26,7 @@ void init_socket() {
   serverip = getenv("server15440");
   if (serverip) fprintf(stderr ,"Got environment variable server15440: %s\n", serverip);
   else {
-    printf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
+    fprintf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
     serverip = "127.0.0.1";
   }
   
@@ -57,6 +58,11 @@ void send_to_server(const char* msg) {
   send(sockfd, msg, strlen(msg), 0);
 }
 
+void send_int_to_server(const int32_t msg, const int32_t size) {
+	char convert = (char)(msg + (int32_t)'0');
+  send(sockfd, &convert, size, 0);
+}
+
 #include <dlfcn.h>
 #include <stdio.h>
  
@@ -67,6 +73,7 @@ void send_to_server(const char* msg) {
 #include <stdarg.h>
 
 #include "../include/dirtree.h"
+//#define MAX_SIZE 4000
 
 // The following line declares a function pointer with the same prototype as the open function.  
 int (*orig_open)(const char *pathname, int flags, ...);  // mode_t mode is needed when flags includes O_CREAT
@@ -81,6 +88,8 @@ struct dirtreenode* (*orig_getdirtree)(const char *path);
 void (*orig_freedirtree)(struct dirtreenode* dt);
 int (*orig_xstat)(int ver, const char * path, struct stat * stat_buf);
 
+//char buff[MAX_SIZE];
+
 // This is our replacement for the open function from libc.
 int open(const char *pathname, int flags, ...) {
 	mode_t m=0;
@@ -92,25 +101,49 @@ int open(const char *pathname, int flags, ...) {
 	}
 	// we just print a message, then call through to the original open function (from libc)
 	fprintf(stderr, "mylib: open called for path %s\n", pathname);
-  send_to_server("open\n");
+	//marshall
+	int32_t length = strlen(pathname);
+  send_int_to_server(0, 1); // open for 0
+  send_int_to_server(length, 1);
+	//char convert_lenth = ();
+	//send_to_server((char*)(length + ((int)'0')));
+	char* msg = malloc(length*sizeof(char));
+	memcpy(msg, pathname, length*sizeof(char));
+	send_to_server(msg);
+	//send_to_server((char*)&flags);
+  send_int_to_server(flags, 1);
 	return orig_open(pathname, flags, m);
 }
 
 int close(int fildes) {
+	send_int_to_server(3,1); // close for 3
+	send_int_to_server(fildes,1);
 	fprintf(stderr, "mylib: close called for fd %d\n", fildes);
-  send_to_server("close\n");
+  //send_to_server("close\n");
 	return orig_close(fildes);
 }
 
 ssize_t read(int fildes, void *buf, size_t nbyte) {
+	send_int_to_server(1,1); // read for 1
+	send_int_to_server(fildes,1); //send fildes
+	int32_t length = strlen(buf);
+  send_int_to_server(length, 1);
+	send_to_server(buf);
+	send_int_to_server(nbyte, 1);
+  //send_to_server("read\n");
 	fprintf(stderr, "mylib: read called for fd %d\n", fildes);
-  send_to_server("read\n");
   return orig_read(fildes, buf, nbyte);
 }
 
 ssize_t write(int fildes, const void *buf, size_t nbyte) {
+	send_int_to_server(2,1); // write for 2
+	send_int_to_server(fildes,1); //send fildes
+	int32_t length = strlen(buf);
+  send_int_to_server(length, 1);
+	send_to_server(buf);
+	send_int_to_server(nbyte, 1);
 	fprintf(stderr, "mylib: write called for fd %d\n", fildes);
-  send_to_server("write\n");
+  //send_to_server("write\n");
   return orig_write(fildes, buf, nbyte);
 }
 

@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <err.h>
 
-#define MAXMSGLEN 100
+#define MAXMSGLEN 4000
 
 int main(int argc, char**argv) {
 	char buf[MAXMSGLEN+1];
@@ -51,22 +51,17 @@ int main(int argc, char**argv) {
 		
 		// get messages and send replies to this client, until it goes away
 		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
+			printf("hi");
 			buf[rv]=0;		// null terminate string to print
-			if(strcmp(buf, "open") == 0) {
-				system("open");
-				//printf("is open");
-			}
-			if(strcmp(buf, "write") == 0) {
-				//printf("is open");
-				system("write");
-			}
-			if(strcmp(buf, "close") == 0) {
-				system("close");
-				//printf("is open");
-			}
+			printf("rv is %d \n", rv);
+			//printf("buff is %s \n", buf);
 		}
 
 		// either client closed connection, or error
+
+		//if (rv==0) err(1,0);
+		//close(sessfd);
+
 		if (rv<0) err(1,0);
 		close(sessfd);
 	}
