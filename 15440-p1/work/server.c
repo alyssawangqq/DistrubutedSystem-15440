@@ -80,6 +80,14 @@ int main(int argc, char**argv) {
 		sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
 		if (sessfd<0) err(1,0);
 		
+//		// get messages and send replies to this client, until it goes away
+//		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
+//			buf[rv]=0;		// null terminate string to print
+//			if(strcmp(buf , "open")) {
+//				printf("is open!!");
+//			}
+//		}
+//=======
 		int fid = read_int32(sessfd);
 		if(fid == OPEN) {
 			const char* path = read_string(sessfd);
