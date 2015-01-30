@@ -16,56 +16,56 @@
 int sockfd;
 
 void init_socket() {
-  static char *serverip;
-  static char *serverport;
-  static unsigned short port;
-  static int rv;
-  static struct sockaddr_in srv;
-  
-  // Get environment variable indicating the ip address of the server
-  serverip = getenv("server15440");
-  if (serverip) fprintf(stderr ,"Got environment variable server15440: %s\n", serverip);
-  else {
-    fprintf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
-    serverip = "127.0.0.1";
-  }
-  
-  // Get environment variable indicating the port of the server
-  serverport = getenv("serverport15440");
-  if (serverport) fprintf(stderr, "Got environment variable serverport15440: %s\n", serverport);
-  else {
-    fprintf(stderr, "Environment variable serverport15440 not found.  Using 15440\n");
-    serverport = "15440";
-  }
-  port = (unsigned short)atoi(serverport);
-  
-  // Create socket
-  sockfd = socket(AF_INET, SOCK_STREAM, 0); // TCP/IP socket
-  if (sockfd<0) err(1, 0);      // in case of error
-  
-  // setup address structure to point to server
-  memset(&srv, 0, sizeof(srv));     // clear it first
-  srv.sin_family = AF_INET;     // IP family
-  srv.sin_addr.s_addr = inet_addr(serverip);  // IP address of server
-  srv.sin_port = htons(port);     // server port
+	static char *serverip;
+	static char *serverport;
+	static unsigned short port;
+	static int rv;
+	static struct sockaddr_in srv;
 
-  // actually connect to the server
-  rv = connect(sockfd, (struct sockaddr*)&srv, sizeof(struct sockaddr));
-  if (rv<0) err(1,0);
+	// Get environment variable indicating the ip address of the server
+	serverip = getenv("server15440");
+	if (serverip) fprintf(stderr ,"Got environment variable server15440: %s\n", serverip);
+	else {
+		fprintf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
+		serverip = "127.0.0.1";
+	}
+
+	// Get environment variable indicating the port of the server
+	serverport = getenv("serverport15440");
+	if (serverport) fprintf(stderr, "Got environment variable serverport15440: %s\n", serverport);
+	else {
+		fprintf(stderr, "Environment variable serverport15440 not found.  Using 15440\n");
+		serverport = "15440";
+	}
+	port = (unsigned short)atoi(serverport);
+
+	// Create socket
+	sockfd = socket(AF_INET, SOCK_STREAM, 0); // TCP/IP socket
+	if (sockfd<0) err(1, 0);      // in case of error
+
+	// setup address structure to point to server
+	memset(&srv, 0, sizeof(srv));     // clear it first
+	srv.sin_family = AF_INET;     // IP family
+	srv.sin_addr.s_addr = inet_addr(serverip);  // IP address of server
+	srv.sin_port = htons(port);     // server port
+
+	// actually connect to the server
+	rv = connect(sockfd, (struct sockaddr*)&srv, sizeof(struct sockaddr));
+	if (rv<0) err(1,0);
 }
-  
+
 void send_to_server(const char* msg) {
-  send(sockfd, msg, strlen(msg), 0);
+	send(sockfd, msg, strlen(msg), 0);
 }
 
 void send_int_to_server(const int32_t msg, const int32_t size) {
 	char convert = (char)(msg + (int32_t)'0');
-  send(sockfd, &convert, size, 0);
+	send(sockfd, &convert, size, 0);
 }
 
 #include <dlfcn.h>
 #include <stdio.h>
- 
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -88,7 +88,6 @@ struct dirtreenode* (*orig_getdirtree)(const char *path);
 void (*orig_freedirtree)(struct dirtreenode* dt);
 int (*orig_xstat)(int ver, const char * path, struct stat * stat_buf);
 
-//char buff[MAX_SIZE];
 
 // This is our replacement for the open function from libc.
 int open(const char *pathname, int flags, ...) {
@@ -103,55 +102,90 @@ int open(const char *pathname, int flags, ...) {
 	fprintf(stderr, "mylib: open called for path %s\n", pathname);
 	//marshall
 	int32_t length = strlen(pathname);
-  send_int_to_server(0, 1); // open for 0
-  //send_int_to_server(length, 1);
+	send_int_to_server(0, 1); // open for 0
+	//send_int_to_server(length, 1);
 	char* msg = malloc(length*sizeof(char));
 	memcpy(msg, pathname, length*sizeof(char));
 	send_to_server(msg);
-  send_int_to_server(flags, 1);
-	return orig_open(pathname, flags, m);
-}
-
-int close(int fildes) {
-	send_int_to_server(3,1); // close for 3
-	send_int_to_server(fildes,1);
-	fprintf(stderr, "mylib: close called for fd %d\n", fildes);
-  //send_to_server("close\n");
-	return orig_close(fildes);
+	send_int_to_server(flags, 1);
+	int rv, cur_fd;
+	char buf[MAXMSGLEN+1];
+	if((rv = recv(sockfd, buf, MAXMSGLEN, 0) > 0)) {
+		buf[rv] = 0;
+		cur_fd = buf[0] - '0';
+		fprintf(stderr, "finishi open , fd is %d", cur_fd);
+		return cur_fd;
+	}
+	//fprintf(stderr, "fd is %s\n", buf);
+	//return orig_open(pathname, flags, m);
+	return 0;
 }
 
 ssize_t read(int fildes, void *buf, size_t nbyte) {
+	fprintf(stderr, "mylib: read called for fd %d\n", fildes);
 	send_int_to_server(1,1); // read for 1
 	send_int_to_server(fildes,1); //send fildes
 	int32_t length = strlen(buf);
-  //send_int_to_server(length, 1);
+	//send_int_to_server(length, 1);
 	char* msg = malloc(length*sizeof(char));
 	memcpy(msg, buf, length*sizeof(char));
 	send_to_server(msg);
 	send_int_to_server(nbyte, 1);
-  //send_to_server("read\n");
-	fprintf(stderr, "mylib: read called for fd %d\n", fildes);
-  return orig_read(fildes, buf, nbyte);
+	//send_to_server("read\n");
+	int rv, numb_bytes;
+	char buffer[MAXMSGLEN+1];
+	if((rv = recv(sockfd, buffer, MAXMSGLEN, 0) > 0)) {
+		buffer[rv] = 0;
+		numb_bytes = buffer[0] - '0';
+		fprintf(stderr, "finishi read");
+		return numb_bytes;
+	}
+	return 0;
+	//return orig_read(fildes, buf, nbyte);
 }
 
 ssize_t write(int fildes, const void *buf, size_t nbyte) {
+	fprintf(stderr, "mylib: write called for fd %d\n", fildes);
 	send_int_to_server(2,1); // write for 2
 	send_int_to_server(fildes,1); //send fildes
 	int32_t length = strlen(buf);
-  //send_int_to_server(length, 1);
+	//send_int_to_server(length, 1);
 	char* msg = malloc(length*sizeof(char));
 	memcpy(msg, buf, length*sizeof(char));
 	send_to_server(msg);
 	send_int_to_server(nbyte, 1);
-	fprintf(stderr, "mylib: write called for fd %d\n", fildes);
-  //send_to_server("write\n");
-  return orig_write(fildes, buf, nbyte);
+	//send_to_server("write\n");
+	int rv, numb_bytes;
+	char buffer[MAXMSGLEN+1];
+	if((rv = recv(sockfd, buffer, MAXMSGLEN, 0) > 0)) {
+		buffer[rv] = 0;
+		numb_bytes = buffer[0] - '0';
+		return numb_bytes;
+	}
+	return 0;
+	//return orig_write(fildes, buf, nbyte);
+}
+
+int close(int fildes) {
+	fprintf(stderr, "mylib: close called for fd %d\n", fildes);
+	send_int_to_server(3,1); // close for 3
+	send_int_to_server(fildes,1);
+	int rv, numb_bytes;
+	char buf[MAXMSGLEN+1];
+	if((rv = recv(sockfd, buf, MAXMSGLEN, 0) > 0)) {
+		buf[rv] = 0;
+		numb_bytes = buf[0] - '0';
+		return numb_bytes;
+	}
+	return 0;
+	//send_to_server("close\n");
+	//return orig_close(fildes);
 }
 
 off_t lseek(int fildes, off_t offset, int whence) {
 	fprintf(stderr, "mylib: lseek called for fd %d\n", fildes);
-  send_to_server("lseek\n");
-  return orig_lseek(fildes, offset, whence);
+	send_to_server("lseek\n");
+	return orig_lseek(fildes, offset, whence);
 }
 
 //int stat(const char *path, struct stat *buf) {
@@ -162,32 +196,32 @@ off_t lseek(int fildes, off_t offset, int whence) {
 
 int unlink(const char *path) {
 	fprintf(stderr, "mylib: unlink called for path %s\n", path);
-  send_to_server("unlink\n");
-  return orig_unlink(path);
+	send_to_server("unlink\n");
+	return orig_unlink(path);
 }
 
 ssize_t getdirentries(int fd, char *buf, size_t nbytes , off_t *basep) {
 	fprintf(stderr, "mylib: orig_getdirentries called for fd %d\n", fd);
-  send_to_server("getdirentries\n");
-  return orig_getdirentries(fd, buf, nbytes, basep);
+	send_to_server("getdirentries\n");
+	return orig_getdirentries(fd, buf, nbytes, basep);
 }
 
 struct dirtreenode* getdirtree(const char *path) {
 	fprintf(stderr, "mylib: orig_getdirtree called for path %s\n", path);
-  send_to_server("getdirtree\n");
-  return orig_getdirtree(path);
+	send_to_server("getdirtree\n");
+	return orig_getdirtree(path);
 }
 
 void freedirtree(struct dirtreenode* dt) {
 	fprintf(stderr, "mylib: freedirtree called for path %s\n", dt->name);
-  send_to_server("freedirtree\n");
-  orig_freedirtree(dt);
+	send_to_server("freedirtree\n");
+	orig_freedirtree(dt);
 }
 
 int __xstat(int ver, const char * path, struct stat * stat_buf) {
 	fprintf(stderr, "mylib: __xstat called for path %s", path);
-  //send_to_server("stat\n");
-  send_to_server("__xstat\n");
+	//send_to_server("stat\n");
+	send_to_server("__xstat\n");
 	return orig_xstat(ver, path, stat_buf);
 }
 
@@ -195,17 +229,17 @@ int __xstat(int ver, const char * path, struct stat * stat_buf) {
 void _init(void) {
 	// set function pointer orig_open to point to the original open function
 	orig_open = dlsym(RTLD_NEXT, "open");
-  orig_close = dlsym(RTLD_NEXT, "close");
-  orig_read = dlsym(RTLD_NEXT, "read");
-  orig_write = dlsym(RTLD_NEXT, "write");
-  orig_lseek = dlsym(RTLD_NEXT, "lseek");
-  orig_xstat = dlsym(RTLD_NEXT, "__xstat");
-  orig_unlink = dlsym(RTLD_NEXT, "unlink");
-  orig_getdirentries = dlsym(RTLD_NEXT, "getdirentries");
-  orig_getdirtree = dlsym(RTLD_NEXT, "getdirtree");
-  orig_freedirtree = dlsym(RTLD_NEXT, "freedirtree");
+	orig_close = dlsym(RTLD_NEXT, "close");
+	orig_read = dlsym(RTLD_NEXT, "read");
+	orig_write = dlsym(RTLD_NEXT, "write");
+	orig_lseek = dlsym(RTLD_NEXT, "lseek");
+	orig_xstat = dlsym(RTLD_NEXT, "__xstat");
+	orig_unlink = dlsym(RTLD_NEXT, "unlink");
+	orig_getdirentries = dlsym(RTLD_NEXT, "getdirentries");
+	orig_getdirtree = dlsym(RTLD_NEXT, "getdirtree");
+	orig_freedirtree = dlsym(RTLD_NEXT, "freedirtree");
 
-  init_socket();
+	init_socket();
 
 	fprintf(stderr, "Init mylib\n");
 }

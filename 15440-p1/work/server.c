@@ -24,10 +24,11 @@ int read_int32(int sessfd) {
 	char buf[MAXMSGLEN+1];
 	if((rv = recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
 		buf[rv] = 0;
+		return buf[0] - '0';
 		//printf("%d", buf[0] - '0');
 		//return (int)(buf - '0');
 	}
-	return buf[0] - '0';
+	return -1;
 }
 
 char* read_string(int sessfd) {
@@ -42,7 +43,12 @@ char* read_string(int sessfd) {
 		//length = buf[0]; //length of path
 		return recv_str;
 	}
-		return NULL;
+	return NULL;
+}
+
+void send_int_to_client(int fd, int sessfd) {
+	char convert = (char)(fd + (int)'0');
+	send(sessfd, &convert, 1, 0);
 }
 
 int main(int argc, char**argv) {
@@ -92,30 +98,36 @@ int main(int argc, char**argv) {
 		//			}
 		//		}
 
-		int fid = read_int32(sessfd);
-		if(fid == OPEN) {
-			const char* path = read_string(sessfd);
-			int flag = read_int32(sessfd);
-			open(path, flag);
-		}
+		int fid;
+		while((fid = read_int32(sessfd)) >= 0) {
+			if(fid == OPEN) {
+				fprintf(stderr, "enter open");
+				const char* path = read_string(sessfd);
+				int flag = read_int32(sessfd);
+				send_int_to_client(open(path, flag), sessfd);
+			}
 
-		if(fid == CLOSE) {
-			int fd = read_int32(sessfd);
-			close(fd);
-		}
+			if(fid == CLOSE) {
+				fprintf(stderr, "enter close");
+				int fd = read_int32(sessfd);
+				send_int_to_client(close(fd), sessfd);
+			}
 
-		if(fid == WRITE) {
-			int fd = read_int32(sessfd);
-			char* buf = read_string(sessfd);
-			size_t nbyte = read_int32(sessfd);
-			write(fd, buf, nbyte);
-		}
+			if(fid == WRITE) {
+				fprintf(stderr, "enter write");
+				int fd = read_int32(sessfd);
+				char* buf = read_string(sessfd);
+				size_t nbyte = read_int32(sessfd);
+				send_int_to_client(write(fd, buf, nbyte), sessfd);
+			}
 
-		if(fid == READ) {
-			int fd = read_int32(sessfd);
-			char* buf = read_string(sessfd);
-			size_t nbyte = read_int32(sessfd);
-			read(fd, buf, nbyte);
+			if(fid == READ) {
+				fprintf(stderr, "enter read");
+				int fd = read_int32(sessfd);
+				char* buf = read_string(sessfd);
+				size_t nbyte = read_int32(sessfd);
+				send_int_to_client(read(fd, buf, nbyte), sessfd);
+			}
 		}
 
 		// either client closed connection, or error

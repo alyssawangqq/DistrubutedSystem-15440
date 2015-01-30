@@ -8,7 +8,7 @@ mylib.so: mylib.o
 #gcc -Wall -o mylib.dylib -dynamiclib mylib.c
 
 server: server.c
-	  gcc -Wall -o server server.c
+	  gcc -std=c99 -Wall -o server server.c
 
 dirtree_test: dirtree_test.c
 	  gcc -L../lib -ldirtree -o dirtree_test dirtree_test.c 
