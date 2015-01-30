@@ -25,7 +25,7 @@ void init_socket() {
   serverip = getenv("server15440");
   if (serverip) fprintf(stderr ,"Got environment variable server15440: %s\n", serverip);
   else {
-    printf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
+    fprintf(stderr ,"Environment variable server15440 not found.  Using 127.0.0.1\n");
     serverip = "127.0.0.1";
   }
   
