@@ -37,15 +37,13 @@ int32_t read_int32(int sessfd) {
 	return -1;
 }
 
-char* read_string(int sessfd) {
+char* read_string(int sessfd, int32_t size) {
 	int rv;
-	char buf[MAXMSGLEN+1];
-	if((rv = recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
-		char* recv_str = malloc(rv+1);
-		for(int i = 0; i < rv; i++) {
-			recv_str[i] = buf[i];
-		}
-		recv_str[rv] = 0;
+	char buf[size];
+	if((rv = recv(sessfd, buf, size, 0)) > 0) {
+		char* recv_str = malloc(rv);
+		memcpy(recv_str, buf, rv);
+		//recv_str[rv] = 0;
 		//length = buf[0]; //length of path
 		return recv_str;
 	}
@@ -58,7 +56,7 @@ void send_int_to_client(int32_t* fd, int sessfd) {
 }
 
 void send_byte_to_client(char* file, int32_t size, int sessfd) {
-	send(sessfd, file, sizeof(int32_t), 0);
+	send(sessfd, file, size, 0);
 }
 
 int main(int argc, char**argv) {
@@ -112,7 +110,7 @@ int main(int argc, char**argv) {
 		while((fid = read_int32(sessfd)) >= 0) {
 			if(fid == OPEN) {
 				fprintf(stderr, "enter open");
-				const char* path = read_string(sessfd);
+				const char* path = read_string(sessfd, MAXMSGLEN);
 				fprintf(stderr, "path is :%s \n", path);
 				int flag = read_int32(sessfd);
 				fprintf(stderr, "flag is :%i \n", flag);
@@ -131,18 +129,23 @@ int main(int argc, char**argv) {
 			if(fid == WRITE) {
 				fprintf(stderr, "enter write");
 				int fd = read_int32(sessfd);
-				char* buf = read_string(sessfd);
+				fprintf(stderr, "fd is :%i \n", fd);
 				int32_t nbyte = read_int32(sessfd);
+				fprintf(stderr, "nbyte is :%i \n", nbyte);
+				//char buf[nbyte];
+				char* buf = read_string(sessfd, nbyte);
+				fprintf(stderr, "buf is :%s \n", buf);
 				int32_t return_val = write(fd, buf, nbyte);
+				print_byte(buf);
+				fprintf(stderr, "return_val is :%i \n", return_val);
 				send_int_to_client(&return_val, sessfd);
+				//send_byte_to_client(buf, return_val, sessfd);
 			}
 
 			if(fid == READ) {
 				fprintf(stderr, "enter read");
 				int fd = read_int32(sessfd);
 				fprintf(stderr, "fd is :%i \n", fd);
-				//char* buf = read_string(sessfd);
-				//fprintf(stderr, "buf is :%s \n", buf);
 				int32_t nbyte = read_int32(sessfd);
 				fprintf(stderr, "nbyte is :%i \n", nbyte);
 				char buf[nbyte];
@@ -151,6 +154,7 @@ int main(int argc, char**argv) {
 				fprintf(stderr, "return_val is :%i \n", return_val);
 				send_int_to_client(&return_val, sessfd);
 				send_byte_to_client(buf, return_val, sessfd);
+				fprintf(stderr, "sent\n");
 			}
 		}
 

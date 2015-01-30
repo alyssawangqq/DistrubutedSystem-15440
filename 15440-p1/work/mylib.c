@@ -131,15 +131,25 @@ ssize_t read(int fildes, void *buf, size_t nbyte) {
 	send_int_to_server((int32_t*)&nbyte, 1);
 	int rv, numb_bytes;
 	int32_t buffer[1];
+	//fprintf(stderr, "ready");
+	//fprintf(stderr, "sockfd is %i \n", sockfd);
+	//fprintf(stderr, "buffer is %i \n", *buffer);
+	//fprintf(stderr, "numb_bytes is %i \n", numb_bytes);
 	if((rv = recv(sockfd, buffer, sizeof(int32_t), 0) > 0)) {
 		numb_bytes = *(int32_t*)buffer;
 		//fprintf(stderr, "recv buffer is %i \n", buffer[0]);
 		fprintf(stderr, "read in size \n");
 	}
+
+	fprintf(stderr, "sockfd is %i \n", sockfd);
+	if(numb_bytes == 0) {
+		return 0;
+	}
 	if((rv = recv(sockfd, buf, numb_bytes, 0) > 0)) {
 		//fprintf(stderr, "recv buffer is %i \n", buffer[0]);
 		fprintf(stderr, "finishi read in buf \n");
 	}
+	fprintf(stderr, "jump");
 	return numb_bytes;
 	//return 0;
 	//return orig_read(fildes, buf, nbyte);
@@ -150,22 +160,27 @@ ssize_t write(int fildes, const void *buf, size_t nbyte) {
 	int write = 2;
 	send_int_to_server(&write,1); // write for 2
 	send_int_to_server(&fildes,1); //send fildes
-	int32_t length = strlen(buf);
-	//send_int_to_server(length, 1);
-	char* msg = malloc(length*sizeof(char));
-	memcpy(msg, buf, length*sizeof(char));
-	send_to_server(msg);
 	send_int_to_server((int32_t*)&nbyte, 1);
-	//send_to_server("write\n");
 	int rv, numb_bytes;
 	int32_t buffer[1];
+	if(nbyte == 0) {
+		return 0;
+	}
+	char* msg = malloc(nbyte);
+	memcpy(msg, buf, nbyte);
+	send_to_server(msg);
+	//send_to_server("write\n");
 	if((rv = recv(sockfd, buffer, sizeof(int32_t), 0) > 0)) {
 		//buffer[rv] = 0;
 		//numb_bytes = buffer[0] - '0';
 		numb_bytes = *(int32_t*)buffer;
-		return numb_bytes;
+		//return numb_bytes;
 	}
-	return 0;
+	//if((rv = recv(sockfd, (void*)buf, numb_bytes, 0) > 0)) {
+	//	//fprintf(stderr, "recv buffer is %i \n", buffer[0]);
+	//	fprintf(stderr, "finishi write in buf \n");
+	//}
+	return numb_bytes;
 	//return orig_write(fildes, buf, nbyte);
 }
 
