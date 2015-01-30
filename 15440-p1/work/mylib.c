@@ -58,9 +58,8 @@ void send_to_server(const char* msg) {
 	send(sockfd, msg, strlen(msg), 0);
 }
 
-void send_int_to_server(const int32_t msg, const int32_t size) {
-	char convert = (char)(msg + (int32_t)'0');
-	send(sockfd, &convert, size, 0);
+void send_int_to_server(int32_t* msg, const int32_t size) {
+	send(sockfd, msg, size * sizeof(int32_t), 0);
 }
 
 #include <dlfcn.h>
@@ -102,18 +101,21 @@ int open(const char *pathname, int flags, ...) {
 	fprintf(stderr, "mylib: open called for path %s\n", pathname);
 	//marshall
 	int32_t length = strlen(pathname);
-	send_int_to_server(0, 1); // open for 0
+	//int* open = malloc(sizeof(int));
+	int open = 0;
+	send_int_to_server(&open, 1); // open for 0
 	//send_int_to_server(length, 1);
 	char* msg = malloc(length*sizeof(char));
 	memcpy(msg, pathname, length*sizeof(char));
 	send_to_server(msg);
-	send_int_to_server(flags, 1);
+	send_int_to_server(&flags, 1);
 	int rv, cur_fd;
-	char buf[MAXMSGLEN+1];
-	if((rv = recv(sockfd, buf, MAXMSGLEN, 0) > 0)) {
-		buf[rv] = 0;
-		cur_fd = buf[0] - '0';
-		fprintf(stderr, "finishi open , fd is %d", cur_fd);
+	int32_t buf[1];
+	if((rv = recv(sockfd, buf, sizeof(int32_t), 0) > 0)) {
+		//buf[rv] = 0;
+		//cur_fd = buf[0] - '0';
+		cur_fd = *(int*)buf;
+		fprintf(stderr, "finish open , fd is %d", cur_fd);
 		return cur_fd;
 	}
 	//fprintf(stderr, "fd is %s\n", buf);
@@ -123,43 +125,44 @@ int open(const char *pathname, int flags, ...) {
 
 ssize_t read(int fildes, void *buf, size_t nbyte) {
 	fprintf(stderr, "mylib: read called for fd %d\n", fildes);
-	send_int_to_server(1,1); // read for 1
-	send_int_to_server(fildes,1); //send fildes
-	int32_t length = strlen(buf);
-	//send_int_to_server(length, 1);
-	char* msg = malloc(length*sizeof(char));
-	memcpy(msg, buf, length*sizeof(char));
-	send_to_server(msg);
-	send_int_to_server(nbyte, 1);
-	//send_to_server("read\n");
+	int read =1;
+	send_int_to_server(&read,1); // read for 1
+	send_int_to_server(&fildes,1); //send fildes
+	send_int_to_server((int32_t*)&nbyte, 1);
 	int rv, numb_bytes;
-	char buffer[MAXMSGLEN+1];
-	if((rv = recv(sockfd, buffer, MAXMSGLEN, 0) > 0)) {
-		buffer[rv] = 0;
-		numb_bytes = buffer[0] - '0';
-		fprintf(stderr, "finishi read");
-		return numb_bytes;
+	int32_t buffer[1];
+	if((rv = recv(sockfd, buffer, sizeof(int32_t), 0) > 0)) {
+		numb_bytes = *(int32_t*)buffer;
+		//fprintf(stderr, "recv buffer is %i \n", buffer[0]);
+		fprintf(stderr, "read in size \n");
 	}
-	return 0;
+	if((rv = recv(sockfd, buf, numb_bytes, 0) > 0)) {
+		//fprintf(stderr, "recv buffer is %i \n", buffer[0]);
+		fprintf(stderr, "finishi read in buf \n");
+	}
+	return numb_bytes;
+	//return 0;
 	//return orig_read(fildes, buf, nbyte);
 }
 
 ssize_t write(int fildes, const void *buf, size_t nbyte) {
 	fprintf(stderr, "mylib: write called for fd %d\n", fildes);
-	send_int_to_server(2,1); // write for 2
-	send_int_to_server(fildes,1); //send fildes
+	int write = 2;
+	send_int_to_server(&write,1); // write for 2
+	send_int_to_server(&fildes,1); //send fildes
 	int32_t length = strlen(buf);
 	//send_int_to_server(length, 1);
 	char* msg = malloc(length*sizeof(char));
 	memcpy(msg, buf, length*sizeof(char));
 	send_to_server(msg);
-	send_int_to_server(nbyte, 1);
+	send_int_to_server((int32_t*)&nbyte, 1);
 	//send_to_server("write\n");
 	int rv, numb_bytes;
-	char buffer[MAXMSGLEN+1];
-	if((rv = recv(sockfd, buffer, MAXMSGLEN, 0) > 0)) {
-		buffer[rv] = 0;
-		numb_bytes = buffer[0] - '0';
+	int32_t buffer[1];
+	if((rv = recv(sockfd, buffer, sizeof(int32_t), 0) > 0)) {
+		//buffer[rv] = 0;
+		//numb_bytes = buffer[0] - '0';
+		numb_bytes = *(int32_t*)buffer;
 		return numb_bytes;
 	}
 	return 0;
@@ -168,13 +171,15 @@ ssize_t write(int fildes, const void *buf, size_t nbyte) {
 
 int close(int fildes) {
 	fprintf(stderr, "mylib: close called for fd %d\n", fildes);
-	send_int_to_server(3,1); // close for 3
-	send_int_to_server(fildes,1);
+	int close = 3;
+	send_int_to_server(&close,1); // close for 3
+	send_int_to_server(&fildes,1);
 	int rv, numb_bytes;
-	char buf[MAXMSGLEN+1];
-	if((rv = recv(sockfd, buf, MAXMSGLEN, 0) > 0)) {
-		buf[rv] = 0;
-		numb_bytes = buf[0] - '0';
+	int buf[1];
+	if((rv = recv(sockfd, buf, sizeof(int), 0) > 0)) {
+		//buf[rv] = 0;
+		//numb_bytes = buf[0] - '0';
+		numb_bytes = *(int*)buf;
 		return numb_bytes;
 	}
 	return 0;

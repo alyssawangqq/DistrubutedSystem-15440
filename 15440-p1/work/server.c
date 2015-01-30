@@ -19,12 +19,18 @@ enum system_call {
 	CLOSE
 };
 
-int read_int32(int sessfd) {
+void print_byte(char* buf) {
+        while(*buf != '\0') {
+                fprintf(stderr, "%d ", *(buf++));
+        }
+}
+
+int32_t read_int32(int sessfd) {
 	int rv;
-	char buf[MAXMSGLEN+1];
-	if((rv = recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
-		buf[rv] = 0;
-		return buf[0] - '0';
+	int32_t* buf = malloc(sizeof(int));
+	if((rv = recv(sessfd, buf, sizeof(int32_t), 0)) > 0) {
+		//buf[rv] = 0;
+		return *buf;
 		//printf("%d", buf[0] - '0');
 		//return (int)(buf - '0');
 	}
@@ -46,13 +52,16 @@ char* read_string(int sessfd) {
 	return NULL;
 }
 
-void send_int_to_client(int fd, int sessfd) {
-	char convert = (char)(fd + (int)'0');
-	send(sessfd, &convert, 1, 0);
+void send_int_to_client(int32_t* fd, int sessfd) {
+	//char convert = (char)(fd + (int)'0');
+	send(sessfd, fd, sizeof(int32_t), 0);
+}
+
+void send_byte_to_client(char* file, int32_t size, int sessfd) {
+	send(sessfd, file, sizeof(int32_t), 0);
 }
 
 int main(int argc, char**argv) {
-	//char buf[MAXMSGLEN+1];
 	char *serverport;
 	unsigned short port;
 	int sockfd, sessfd, rv;
@@ -83,6 +92,7 @@ int main(int argc, char**argv) {
 	if (rv<0) err(1,0);
 
 	// main server loop, handle clients one at a time, quit after 10 clients
+	//char buf[MAXMSGLEN+1];
 	while (1) {
 
 		// wait for next client, get session socket
@@ -90,51 +100,61 @@ int main(int argc, char**argv) {
 		sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
 		if (sessfd<0) err(1,0);
 
-		//		// get messages and send replies to this client, until it goes away
-		//		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
-		//			buf[rv]=0;		// null terminate string to print
-		//			if(strcmp(buf , "open")) {
-		//				printf("is open!!");
-		//			}
-		//		}
+		// get messages and send replies to this client, until it goes away
+		//while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
+		//	buf[rv]=0;		// null terminate string to print
+		//	int32_t fd = *(int32_t*)buf;
+		//	fprintf(stderr, "%d \n", fd);
+		//	//fprintf(stderr, "%s", buf);
+		//}
 
-		int fid;
+		int fid = -1;
 		while((fid = read_int32(sessfd)) >= 0) {
 			if(fid == OPEN) {
 				fprintf(stderr, "enter open");
 				const char* path = read_string(sessfd);
+				fprintf(stderr, "path is :%s \n", path);
 				int flag = read_int32(sessfd);
-				send_int_to_client(open(path, flag), sessfd);
+				fprintf(stderr, "flag is :%i \n", flag);
+				int32_t fd = open(path, flag);
+				fprintf(stderr, "fd is :%i \n", fd);
+				send_int_to_client(&fd, sessfd);
 			}
 
 			if(fid == CLOSE) {
 				fprintf(stderr, "enter close");
 				int fd = read_int32(sessfd);
-				send_int_to_client(close(fd), sessfd);
+				int32_t return_val = close(fd);
+				send_int_to_client(&return_val, sessfd);
 			}
 
 			if(fid == WRITE) {
 				fprintf(stderr, "enter write");
 				int fd = read_int32(sessfd);
 				char* buf = read_string(sessfd);
-				size_t nbyte = read_int32(sessfd);
-				send_int_to_client(write(fd, buf, nbyte), sessfd);
+				int32_t nbyte = read_int32(sessfd);
+				int32_t return_val = write(fd, buf, nbyte);
+				send_int_to_client(&return_val, sessfd);
 			}
 
 			if(fid == READ) {
 				fprintf(stderr, "enter read");
 				int fd = read_int32(sessfd);
-				char* buf = read_string(sessfd);
-				size_t nbyte = read_int32(sessfd);
-				send_int_to_client(read(fd, buf, nbyte), sessfd);
+				fprintf(stderr, "fd is :%i \n", fd);
+				//char* buf = read_string(sessfd);
+				//fprintf(stderr, "buf is :%s \n", buf);
+				int32_t nbyte = read_int32(sessfd);
+				fprintf(stderr, "nbyte is :%i \n", nbyte);
+				char buf[nbyte];
+				int32_t return_val = read(fd, buf, nbyte);
+				print_byte(buf);
+				fprintf(stderr, "return_val is :%i \n", return_val);
+				send_int_to_client(&return_val, sessfd);
+				send_byte_to_client(buf, return_val, sessfd);
 			}
 		}
 
 		// either client closed connection, or error
-
-		//if (rv==0) err(1,0);
-		//close(sessfd);
-
 		if (rv<0) err(1,0);
 		close(sessfd);
 	}
