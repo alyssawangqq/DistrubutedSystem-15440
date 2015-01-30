@@ -4,8 +4,8 @@ mylib.o: mylib.c
 		gcc -Wall -fPIC -DPIC -c mylib.c -L../lib
 
 mylib.so: mylib.o
-		gcc -Wall -o mylib.dylib -dynamiclib mylib.c
-#ld -shared -o mylib.so mylib.o -ldl
+		ld -shared -o mylib.so mylib.o -ldl
+#gcc -Wall -o mylib.dylib -dynamiclib mylib.c
 
 server: server.c
 	  gcc -Wall -o server server.c
