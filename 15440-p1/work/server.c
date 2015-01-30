@@ -78,22 +78,20 @@ int main(int argc, char**argv) {
 		sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
 		if (sessfd<0) err(1,0);
 		
-<<<<<<< HEAD
-		// get messages and send replies to this client, until it goes away
-		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
-			buf[rv]=0;		// null terminate string to print
-			if(strcmp(buf , "open")) {
-				printf("is open!!");
-			}
-		}
-=======
+//		// get messages and send replies to this client, until it goes away
+//		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
+//			buf[rv]=0;		// null terminate string to print
+//			if(strcmp(buf , "open")) {
+//				printf("is open!!");
+//			}
+//		}
+//=======
 		int fid = read_int32(sessfd);
 		if(fid == OPEN) {
 			const char* path = read_string(sessfd);
 			int flag = read_int32(sessfd);
 			open(path, flag);
 	}
->>>>>>> a2e25b49df13707edadbf07daf06b77a3a9823fa
 
 	// either client closed connection, or error
 
