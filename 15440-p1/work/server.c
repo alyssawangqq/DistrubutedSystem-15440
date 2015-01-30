@@ -6,12 +6,41 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h> 
 #include <err.h>
+#include <stdint.h>
 
-#define MAXMSGLEN 4000
+#define MAXMSGLEN 100
+
+enum system_call {
+	OPEN,
+	READ,
+	WRITE,
+	CLOSE
+};
+
+int read_int32(int sessfd) {
+	int rv;
+	char buf[MAXMSGLEN+1];
+	if((rv = recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
+		buf[rv] = 0;
+		printf("%d", buf[0] - '0');
+		//return (int)(buf - '0');
+	}
+		return buf[0] - '0';
+}
+
+const char* read_string(int sessfd) {
+	int rv;
+	char* buf = malloc(MAXMSGLEN+1);
+	if((rv = recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
+		buf[rv] = 0;
+	}
+	return buf;
+}
 
 int main(int argc, char**argv) {
-	char buf[MAXMSGLEN+1];
+	//char buf[MAXMSGLEN+1];
 	char *serverport;
 	unsigned short port;
 	int sockfd, sessfd, rv;
@@ -49,21 +78,20 @@ int main(int argc, char**argv) {
 		sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
 		if (sessfd<0) err(1,0);
 		
-		// get messages and send replies to this client, until it goes away
-		while ( (rv=recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
-			printf("hi");
-			buf[rv]=0;		// null terminate string to print
-			printf("rv is %d \n", rv);
-			//printf("buff is %s \n", buf);
-		}
+		int fid = read_int32(sessfd);
+		if(fid == OPEN) {
+			const char* path = read_string(sessfd);
+			int flag = read_int32(sessfd);
+			open(path, flag);
+	}
 
-		// either client closed connection, or error
+	// either client closed connection, or error
 
-		//if (rv==0) err(1,0);
-		//close(sessfd);
+	//if (rv==0) err(1,0);
+	//close(sessfd);
 
-		if (rv<0) err(1,0);
-		close(sessfd);
+	if (rv<0) err(1,0);
+	close(sessfd);
 	}
 
 	// close socket
