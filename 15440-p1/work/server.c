@@ -31,10 +31,12 @@ int read_int32(int sessfd) {
 }
 
 const char* read_string(int sessfd) {
-	int rv;
+	int rv, length;
 	char* buf = malloc(MAXMSGLEN+1);
+	//char* str = malloc();
 	if((rv = recv(sessfd, buf, MAXMSGLEN, 0)) > 0) {
 		buf[rv] = 0;
+		//length = buf[0]; //length of path
 	}
 	return buf;
 }
