@@ -109,6 +109,7 @@ int open(const char *pathname, int flags, ...) {
 	memcpy(msg, pathname, length*sizeof(char));
 	send_to_server(msg);
 	send_int_to_server(&flags, 1);
+	send_int_to_server((int32_t*)&m, 1);
 	int rv, cur_fd;
 	int32_t buf[1];
 	if((rv = recv(sockfd, buf, sizeof(int32_t), 0) > 0)) {

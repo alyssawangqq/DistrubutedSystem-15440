@@ -114,7 +114,14 @@ int main(int argc, char**argv) {
 				fprintf(stderr, "path is :%s \n", path);
 				int flag = read_int32(sessfd);
 				fprintf(stderr, "flag is :%i \n", flag);
-				int32_t fd = open(path, flag);
+				int mode = read_int32(sessfd);
+				fprintf(stderr, "mode is :%i \n", mode);
+					int32_t fd = open(path, flag, mode);
+				if(flag & O_CREAT) {
+					fd = open(path, flag, mode);
+				}else {
+					fd = open(path, flag, mode);
+				}
 				fprintf(stderr, "fd is :%i \n", fd);
 				send_int_to_client(&fd, sessfd);
 			}
