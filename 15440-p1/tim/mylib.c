@@ -56,7 +56,8 @@ struct dirtreenode* (*orig_getdirtree)(const char *path);
 void (*orig_freedirtree)(struct dirtreenode* dt);
 
 void reconnect() {
-	orig_close(sockfd);
+	//orig_close(sockfd);
+	close(sockfd);
 	if (!init_socket()) {
 		exit(1);
 	}
@@ -124,7 +125,7 @@ int close(int fildes) {
 			return ret;
 		}
 	} else {
-		reconnect();
+		//reconnect();
 	}
 	fprintf(stderr, "close -1\n");
 	return -1;
@@ -132,18 +133,24 @@ int close(int fildes) {
 
 ssize_t read(int fildes, void *buf, size_t nbyte) {
 	//return orig_read(fildes, buf, nbyte);
-	int recv_numb;
+	int ret;
 	fprintf(stderr, "try read\n");
 	if(send_int(sockfd, READ) && 
 			send_int(sockfd, fildes) &&
 			send_int(sockfd, nbyte) &&
-			recv_int(sockfd, &recv_numb)&&
-			recv_exact(sockfd, buf, recv_numb, 0)) {
-		return recv_numb;
+			recv_int(sockfd, &ret)){
+		fprintf(stderr, "send recv complete\n");
+		if(ret > 0) {
+			recv_exact(sockfd, buf, ret, 0);
+			return ret;
+		}else {
+			return 0;
+		}
 	}else {
+		fprintf(stderr, "reconnect");
 		reconnect();
 	}
-	return 0;
+	return -1;
 }
 
 ssize_t write(int fildes, const void *buf, size_t nbyte) {
