@@ -7,57 +7,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h> 
+#include <util.h>
 #include <err.h>
 #include <stdint.h>
 
 #define MAXMSGLEN 1000
-
-enum system_call {
-	OPEN,
-	READ,
-	WRITE,
-	CLOSE
-};
-
-void print_byte(char* buf) {
-        while(*buf != '\0') {
-                fprintf(stderr, "%d ", *(buf++));
-        }
-}
-
-int32_t read_int32(int sessfd) {
-	int rv;
-	int32_t* buf = malloc(sizeof(int));
-	if((rv = recv(sessfd, buf, sizeof(int32_t), 0)) > 0) {
-		//buf[rv] = 0;
-		return *buf;
-		//printf("%d", buf[0] - '0');
-		//return (int)(buf - '0');
-	}
-	return -1;
-}
-
-char* read_string(int sessfd, int32_t size) {
-	int rv;
-	char buf[size];
-	if((rv = recv(sessfd, buf, size, 0)) > 0) {
-		char* recv_str = malloc(rv);
-		memcpy(recv_str, buf, rv);
-		//recv_str[rv] = 0;
-		//length = buf[0]; //length of path
-		return recv_str;
-	}
-	return NULL;
-}
-
-void send_int_to_client(int32_t* fd, int sessfd) {
-	//char convert = (char)(fd + (int)'0');
-	send(sessfd, fd, sizeof(int32_t), 0);
-}
-
-void send_byte_to_client(char* file, int32_t size, int sessfd) {
-	send(sessfd, file, size, 0);
-}
 
 int main(int argc, char**argv) {
 	char *serverport;
@@ -114,7 +68,14 @@ int main(int argc, char**argv) {
 				fprintf(stderr, "path is :%s \n", path);
 				int flag = read_int32(sessfd);
 				fprintf(stderr, "flag is :%i \n", flag);
-				int32_t fd = open(path, flag);
+				int mode = read_int32(sessfd);
+				fprintf(stderr, "mode is :%i \n", mode);
+					int32_t fd = open(path, flag, mode);
+				if(flag & O_CREAT) {
+					fd = open(path, flag, mode);
+				}else {
+					fd = open(path, flag);
+				}
 				fprintf(stderr, "fd is :%i \n", fd);
 				send_int_to_client(&fd, sessfd);
 			}
@@ -136,7 +97,7 @@ int main(int argc, char**argv) {
 				char* buf = read_string(sessfd, nbyte);
 				fprintf(stderr, "buf is :%s \n", buf);
 				int32_t return_val = write(fd, buf, nbyte);
-				print_byte(buf);
+				//print_byte(buf);
 				fprintf(stderr, "return_val is :%i \n", return_val);
 				send_int_to_client(&return_val, sessfd);
 				//send_byte_to_client(buf, return_val, sessfd);
@@ -169,4 +130,3 @@ int main(int argc, char**argv) {
 
 	return 0;
 }
-
