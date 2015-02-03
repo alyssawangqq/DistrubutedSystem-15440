@@ -74,7 +74,7 @@ int main(int argc, char**argv) {
 				if(flag & O_CREAT) {
 					fd = open(path, flag, mode);
 				}else {
-					fd = open(path, flag, mode);
+					fd = open(path, flag);
 				}
 				fprintf(stderr, "fd is :%i \n", fd);
 				send_int_to_client(&fd, sessfd);
@@ -97,7 +97,7 @@ int main(int argc, char**argv) {
 				char* buf = read_string(sessfd, nbyte);
 				fprintf(stderr, "buf is :%s \n", buf);
 				int32_t return_val = write(fd, buf, nbyte);
-				print_byte(buf);
+				//print_byte(buf);
 				fprintf(stderr, "return_val is :%i \n", return_val);
 				send_int_to_client(&return_val, sessfd);
 				//send_byte_to_client(buf, return_val, sessfd);
@@ -130,4 +130,3 @@ int main(int argc, char**argv) {
 
 	return 0;
 }
-
