@@ -82,7 +82,7 @@ bool handle(int clientfd) {
       while (len > 0) {
         int recv_len = min(len, BUF_LEN);
         DUMP;
-        if (!recv_exact(clientfd, buf, recv_len)) {
+        if (!recv_exact(clientfd, buf, recv_len, 0)) {
           return false;
         }
         if (!write_exact(fd, buf, recv_len)) {

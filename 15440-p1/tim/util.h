@@ -10,14 +10,15 @@ enum SystemCall {
   OPEN,
   WRITE,
   CLOSE,
+	READ,
 };
 
 extern ssize_t (*util_read)(int fildes, void *buf, size_t nbyte);
 extern ssize_t (*util_write)(int fildes, const void *buf, size_t nbyte);
 
-bool send_exact(int fd, const void* buf, int size);
+bool send_exact(int fd, const void* buf, int size, int flags);
 
-bool recv_exact(int fd, void* buf, int size);
+bool recv_exact(int fd, void* buf, int size, int flags);
 
 bool send_int(int fd, int i);
 
