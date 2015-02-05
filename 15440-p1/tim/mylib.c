@@ -201,7 +201,8 @@ off_t lseek(int fildes, off_t offset, int whence) {
 int __xstat(int ver, const char * path, struct stat * stat_buf) {
 	fprintf(stderr, "mylib: __xstat called for path %s", path);
 	//send_to_server("__xstat\n");
-	return orig_xstat(ver, path, stat_buf);
+	//return orig_xstat(ver, path, stat_buf);
+	return 0;
 }
 
 int unlink(const char *path) {

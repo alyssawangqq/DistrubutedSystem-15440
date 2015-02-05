@@ -9,6 +9,7 @@
 #include <err.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include<pthread.h>
 
 #include "util.h"
 
@@ -26,7 +27,9 @@ bool handle(int clientfd) {
 	fprintf(stderr, "\n");
 	char buf[BUF_LEN];
 	int func;
+	fprintf(stderr, "client fd is :%d\n", clientfd);
 	if (!recv_int(clientfd, &func)) {
+		//fprintf(stderr, "fail recv func\n");
 		return false;
 	}
 	if (func == OPEN) {
@@ -134,6 +137,14 @@ bool handle(int clientfd) {
 	return true;
 }
 
+void* client_handler(void* clientfd_desc) {
+	int clientfd = *(int*)clientfd_desc;
+	DUMP;
+	while(handle(clientfd));
+	DUMP;
+	return 0;
+}
+
 #include <stdio.h>
 
 int main(int argc, char**argv) {
@@ -175,11 +186,16 @@ int main(int argc, char**argv) {
 			continue;
 		}
 		DUMP;
-
+		//pthread_t thread_id;
+		//if(pthread_create(&thread_id, NULL, client_handler, (void*) &sessfd) < 0) {
+		//	fprintf(stderr, "fail to create thread\n");
+		//	return 1;
+		//}
+		//fprintf(stderr, "handle client\n");
 		while(handle(sessfd));
 
 		close(sessfd);
 	}
 
 	return 0;
-}
+	}
