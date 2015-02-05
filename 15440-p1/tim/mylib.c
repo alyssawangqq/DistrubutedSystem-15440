@@ -178,7 +178,19 @@ ssize_t write(int fildes, const void *buf, size_t nbyte) {
 
 off_t lseek(int fildes, off_t offset, int whence) {
 	fprintf(stderr, "mylib: lseek called for fd %d\n", fildes);
-	return orig_lseek(fildes, offset, whence);
+	int ret;
+	if (!opened_fd[fildes].exist) {
+		return orig_lseek(-1, offset, whence);
+	}
+	if(send_int(sockfd, LSEEK)&&
+			send_int(sockfd, fildes)&&
+			send_int(sockfd, offset)&&
+			send_int(sockfd, whence)&&
+			recv_int(sockfd, &ret)) {
+		return (off_t)ret;
+	}
+	return 0;
+	//return orig_lseek(fildes, offset, whence);
 }
 
 //int stat(const char *path, struct stat *buf) {
@@ -194,7 +206,15 @@ int __xstat(int ver, const char * path, struct stat * stat_buf) {
 
 int unlink(const char *path) {
 	fprintf(stderr, "mylib: unlink called for path %s\n", path);
-	return orig_unlink(path);
+	int ret;
+	if(send_int(sockfd, UNLINK)&&
+			send_string(sockfd, path)&&
+			//send_exact(sockfd, path, strlen(path), 0)&&
+			recv_int(sockfd, &ret)) {
+		return ret;
+	}
+	return 0;
+	//return orig_unlink(path);
 }
 
 ssize_t getdirentries(int fd, char *buf, size_t nbytes , off_t *basep) {

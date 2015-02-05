@@ -11,6 +11,12 @@ enum SystemCall {
 	WRITE,
 	CLOSE,
 	READ,
+	LSEEK,
+	__XSTAT,
+	UNLINK,
+	GETDIRENTRIES,
+	GETDIRTREE,
+	FREEDIRTREE,
 };
 
 bool send_exact(int fd, const void* buf, int size, int flags);

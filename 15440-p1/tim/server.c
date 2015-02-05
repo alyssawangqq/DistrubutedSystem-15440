@@ -92,16 +92,43 @@ bool handle(int clientfd) {
 		fprintf(stderr, "read\n");
 		if(recv_int(clientfd, &fd) && 
 				recv_int(clientfd, &len)) {
-			while(len > 0) {
+			//while(len > 0) {
 				//fprintf(stderr, "len debug");
 				retlen = read(fd, buf, len);
-				fprintf(stderr, "len debug %i \n", len);
-				len -= retlen;
-			}
+				//if(retlen == 0) {
+				//	break;
+				//}
+				//fprintf(stderr, "len debug %i \n", len);
+				//fprintf(stderr, "retlen debug %i \n", retlen);
+			//	len -= retlen;
+			//}
 			send_int(clientfd, retlen);
 			send_exact(clientfd, buf, retlen, 0);
 		}else {
 			return false;
+		}
+	}
+	if(func == LSEEK) {
+		int fd, whence, offset;
+		if(recv_int(clientfd, &fd)&&
+				(recv_int(clientfd, &offset))&&
+				(recv_int(clientfd, &whence))) {
+			if(!send_int(clientfd, lseek(fd, (off_t)offset, whence))) {
+				return false;	
+			}
+		}else {
+			return false;
+		}
+	}
+	if(func == UNLINK) {
+		int ret;
+		if(recv_string(clientfd, buf)) {
+			if((ret = unlink(buf)) != 0) {
+				fprintf(stderr, "unlink err.\n");
+				return false;
+			}else {
+				send_int(clientfd, ret);
+			}
 		}
 	}
 	return true;
