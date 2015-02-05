@@ -92,12 +92,12 @@ bool handle(int clientfd) {
 		fprintf(stderr, "read\n");
 		if(recv_int(clientfd, &fd) && 
 				recv_int(clientfd, &len)) {
-			//while(len > 0) {
-			//fprintf(stderr, "len debug");
-			retlen = read(fd, buf, len);
-			fprintf(stderr, "len debug %i \n", len);
-			len -= retlen;
-			//}
+			while(len > 0) {
+				//fprintf(stderr, "len debug");
+				retlen = read(fd, buf, len);
+				fprintf(stderr, "len debug %i \n", len);
+				len -= retlen;
+			}
 			send_int(clientfd, retlen);
 			send_exact(clientfd, buf, retlen, 0);
 		}else {
