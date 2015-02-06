@@ -243,7 +243,7 @@ ssize_t getdirentries(int fd, char *buf, size_t nbytes , off_t *basep) {
 	if(send_int(sockfd, GETDIRENTRIES) &&
 			send_int(sockfd, fd) &&
 			send_int(sockfd, nbytes) &&
-			send_int64(sockfd, (intptr_t)basep) &&
+			//send_int64(sockfd, *basep) &&
 			recv_int(sockfd, &ret)) {
 		if(ret > 0) {
 			recv_exact(sockfd, buf, ret, 0);
@@ -272,14 +272,14 @@ struct dirtreenode* getdirtree(const char *path) {
 	//return orig_getdirtree(path);
 }
 
-void freedirtree(struct dirtreenode* dt) {
-	fprintf(stderr, "mylib: freedirtree called for path %s\n", dt->name);
-	if(!send_int(sockfd, FREEDIRTREE) &&
-			!send_dirtreenode(sockfd, dt)) {
-		return;
-	}
-	//orig_freedirtree(dt);
-}
+//void freedirtree(struct dirtreenode* dt) {
+//	fprintf(stderr, "mylib: freedirtree called for path %s\n", dt->name);
+//	if(!send_int(sockfd, FREEDIRTREE) &&
+//			!send_dirtreenode(sockfd, dt)) {
+//		return;
+//	}
+//	//orig_freedirtree(dt);
+//}
 
 void _init(void) {
 	orig_open = dlsym(RTLD_NEXT, "open");
@@ -291,7 +291,7 @@ void _init(void) {
 	orig_unlink = dlsym(RTLD_NEXT, "unlink");
 	orig_getdirentries = dlsym(RTLD_NEXT, "getdirentries");
 	orig_getdirtree = dlsym(RTLD_NEXT, "getdirtree");
-	orig_freedirtree = dlsym(RTLD_NEXT, "freedirtree");
+	//orig_freedirtree = dlsym(RTLD_NEXT, "freedirtree");
 
 	if (!init_socket()) {
 		exit(1);
