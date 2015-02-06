@@ -1,0 +1,729 @@
+ct 4: succ
+send_int: 7, 1
+send_exact 4: succ
+send_int: 1024, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+send recv complete
+recv_exact 1024: Success
+succ
+try read
+send_exact 4: succ
+send_int: 3, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 4: succ
+send_int: 1024, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+send recv complete
+recv_exact 1024: TIMEOUT - TERMINATED
+---------end---------
+server stdout:
+--------start--------
+---------end---------
+server stderr:
+--------start--------
+accpeting
+server.c:238
+server.c:240
+server.c:245
+handle client
+accpeting
+server.c:238
+fd is : 5
+server.c:197
+
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+open
+recv_exact 4: Success
+succ
+recv_int: 16, 1
+recv_exact 16: Success
+succ
+recv_string: bin/evil_rootkit, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+send_exact 4: succ
+send_int: 7, 1
+
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+read
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+send_exact 4: succ
+send_int: 1024, 1
+send_exact 1024: succ
+
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+read
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+[... 1682 lines skipped ...]
+send_exact 1024: succ
+
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+read
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+send_exact 4: succ
+send_int: 1024, 1
+send_exact 1024: succ
+
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+read
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+send_exact 4: succ
+send_int: 1024, 1
+send_exact 1024: succ
+
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+read
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 4: Success
+succ
+recv_int: 1024, 1
+send_exact 4: succ
+send_int: 1024, 1
+send_exact 1024: succ
+
+recv_exact 4: Success
+fail
+recv_int: 3, 0
+fail recv func
+server.c:199
+./auto/grade-ch3.sh: line 82: 10115 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
+Test: Bookworm 3                                              pass
+Test: Super reads                                             pass
+Test: Author 1                                                pass
+Test: Author 2                                                pass
+Test: Author 3                                                pass
+Test: Fast and furious 1                                      pass
+Test: Fast and furious 2                                      fail
+client exit value 124: TIMED OUT
+client stdout:
+--------start--------
+---------end---------
+client stderr:
+--------start--------
+try open
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 7: succ
+send_string: huge-in, 1
+send_exact 4: succ
+send_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+open: 7
+try read
+send_exact 4: succ
+send_int: 3, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 4: succ
+send_int: 1000000, 1
+recv_exact 4: TIMEOUT - TERMINATED
+---------end---------
+server stdout:
+--------start--------
+---------end---------
+server stderr:
+--------start--------
+accpeting
+server.c:238
+server.c:240
+server.c:245
+handle client
+accpeting
+server.c:238
+fd is : 5
+server.c:197
+
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+open
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 7: Success
+succ
+recv_string: huge-in, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+send_exact 4: succ
+send_int: 7, 1
+
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+read
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 4: Success
+succ
+recv_int: 1000000, 1
+./auto/grade-ch3.sh: line 82: 10222 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
+Test: File a la mode                                          pass
+Test: DELETED                                                 pass
+Test: Gotta list them all                                     pass
+Test: The tree of life                                        pass
+Test: You're a bad, bad file.                                 fail
+client exit value 124: TIMED OUT
+client stdout:
+--------start--------
+---------end---------
+client stderr:
+--------start--------
+try open
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 9, 1
+send_exact 9: succ
+send_string: localFile, 1
+send_exact 4: succ
+send_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: -1, 1
+open: -1
+try read
+send_exact 4: succ
+send_int: 3, 1
+send_exact 4: succ
+send_int: 1000, 1
+send_exact 4: succ
+send_int: 1024, 1
+recv_exact 4: Success
+succ
+recv_int: -1, 1
+send recv complete
+try open
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 17, 1
+send_exact 17: succ
+send_string: my_favorite_songs, 1
+send_exact 4: succ
+send_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+open: 7
+try read
+send_exact 4: succ
+send_int: 3, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 4: succ
+send_int: 1024, 1
+recv_exact 4: Success
+succ
+recv_int: -1, 1
+send recv complete
+try close: 7
+send_exact 4: succ
+[... 34 lines skipped ...]
+send_int: 4, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 4: succ
+send_int: 10000, 1
+send_exact 4: succ
+send_int: -1, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: -1, 1
+try close: 7
+send_exact 4: succ
+send_int: 2, 1
+send_exact 4: succ
+send_int: 7, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 0, 1
+close 0
+mylib: __xstat called for path localFilesend_exact 4: succ
+send_int: 1, 1
+send_exact 4: succ
+send_int: 9, 1
+send_exact 9: succ
+send_string: localFile, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 4: succ
+send_int: 1939461776, 1
+send_exact 4: succ
+send_int: 1560771120, 1
+send_exact 4: succ
+send_int: 5, 1
+send_exact 4: succ
+send_int: 32525, 1
+send_exact 4: succ
+send_int: 310300254, 1
+send_exact 4: succ
+send_int: 1558686663, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 4848441, 1
+send_exact 4: succ
+send_int: 30, 1
+send_exact 4: succ
+send_int: 1552760164, 1
+send_exact 4: succ
+send_int: 1552772608, 1
+recv_exact 4: TIMEOUT - TERMINATED
+---------end---------
+server stdout:
+--------start--------
+---------end---------
+server stderr:
+--------start--------
+accpeting
+server.c:238
+server.c:240
+server.c:245
+handle client
+accpeting
+server.c:238
+fd is : 5
+server.c:197
+
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+open
+recv_exact 4: Success
+succ
+recv_int: 9, 1
+recv_exact 9: Success
+succ
+recv_string: localFile, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+send_exact 4: succ
+send_int: -1, 1
+
+recv_exact 4: No such file or directory
+succ
+recv_int: 3, 1
+read
+recv_exact 4: No such file or directory
+succ
+recv_int: 1000, 1
+recv_exact 4: No such file or directory
+succ
+recv_int: 1024, 1
+send_exact 4: succ
+send_int: -1, 1
+send_exact -1: succ
+
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 0, 1
+open
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 17, 1
+recv_exact 17: Bad file descriptor
+succ
+recv_string: my_favorite_songs, 1
+[... 47 lines skipped ...]
+recv_exact 3: Bad file descriptor
+succ
+recv_string: foo, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 0, 1
+send_exact 4: succ
+send_int: 7, 1
+
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 4, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 7, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 10000, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: -1, 1
+send_exact 4: succ
+send_int: -1, 1
+
+recv_exact 4: Invalid argument
+succ
+recv_int: 2, 1
+close
+recv_exact 4: Invalid argument
+succ
+recv_int: 7, 1
+send_exact 4: succ
+send_int: 0, 1
+
+recv_exact 4: Invalid argument
+succ
+recv_int: 1, 1
+write
+recv_exact 4: Invalid argument
+succ
+recv_int: 9, 1
+recv_exact 4: Invalid argument
+succ
+recv_int: 1633906540, 1
+server.c:74
+recv_exact 4096: Invalid argument
+Invalid argument
+fail
+server.c:199
+./auto/grade-ch3.sh: line 82: 10303 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
+Test: That's not your file.                                   fail
+client exit value 141: OTHER FAILURE
+client stdout:
+--------start--------
+closed: -1
+---------end---------
+client stderr:
+--------start--------
+try write
+try open
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 6, 1
+send_exact 6: succ
+send_string: foobar, 1
+send_exact 4: succ
+send_int: 0, 1
+recv_exact 4: Bad file descriptor
+succ
+recv_int: 7, 1
+open: 7
+try write
+try write
+try close: 5
+send_exact 4: succ
+send_int: 2, 1
+send_exact 4: succ
+send_int: 5, 1
+recv_exact 4: Bad file descriptor
+fail
+recv_int: 32555, 0
+close -1
+try close: 7
+send_exact 4: succ
+send_int: 2, 1
+send_exact 4: ---------end---------
+server stdout:
+--------start--------
+---------end---------
+server stderr:
+--------start--------
+accpeting
+server.c:238
+server.c:240
+server.c:245
+handle client
+accpeting
+server.c:238
+fd is : 5
+server.c:197
+
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+open
+recv_exact 4: Success
+succ
+recv_int: 6, 1
+recv_exact 6: Success
+succ
+recv_string: foobar, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+send_exact 4: succ
+send_int: 7, 1
+
+recv_exact 4: Success
+succ
+recv_int: 2, 1
+close
+recv_exact 4: Success
+succ
+recv_int: 5, 1
+send_exact 4: fail
+send_int: 0, 0
+server.c:199
+./auto/grade-ch3.sh: line 82: 10331 Terminated              stdbuf -e0 -o0 ../build/server
+---------end---------
+Test: That's not your file either.                            pass
+Test: Memory management is super fun                          fail
+client exit value 124: TIMED OUT
+client stdout:
+--------start--------
+---------end---------
+client stderr:
+--------start--------
+empty calloc called
+MALLOCLIB INIT
+mylib: getdirtree called for path .
+send_exact 4: succ
+send_int: 8, 1
+send_exact 4: succ
+send_int: 1, 1
+send_exact 1: succ
+send_string: ., 1
+recv_exact 4: Success
+succ
+recv_int: 1, 1
+recv_exact 1: Success
+succ
+recv_string: ., 1
+recv_exact 4: Success
+succ
+recv_int: 5, 1
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+recv_exact 3: Success
+succ
+recv_string: bin, 1
+recv_exact 4: Success
+succ
+recv_int: 1, 1
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 7: Success
+succ
+recv_string: eclipse, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 17, 1
+recv_exact 17: Success
+succ
+recv_string: my_favorite_songs, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 14, 1
+recv_exact 14: Success
+succ
+[... 21982 lines skipped ...]
+recv_exact 3: Success
+succ
+recv_string: f10, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 3, 1
+recv_exact 3: Success
+succ
+recv_string: s10, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 8, 1
+recv_exact 8: Success
+succ
+recv_string: binaries, 1
+recv_exact 4: Success
+succ
+recv_int: 1, 1
+recv_exact 4: Success
+succ
+recv_int: 7, 1
+recv_exact 7: Success
+succ
+recv_string: eclipse, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+recv_exact 4: Success
+succ
+recv_int: 17, 1
+recv_exact 17: Success
+succ
+recv_string: midterm_solutions, 1
+recv_exact 4: Success
+succ
+recv_int: 0, 1
+mylib: getdirtree called for path .
+send_exact 4: succ
+send_int: 8, 1
+send_exact 4: succ
+send_int: 1, 1
+send_exact 1: succ
+send_string: ., 1
+recv_exact 4: TIMEOUT - TERMINATED
+---------end---------
+server stdout:
+--------start--------
+---------end---------
+server stderr:
+--------start--------
+empty calloc called
+MALLOCLIB INIT
+accpeting
+server.c:238
+server.c:240
+server.c:245
+handle client
+accpeting
+server.c:238
+fd is : 6
+server.c:197
+
+recv_exact 4: Success
+succ
+recv_int: 8, 1
+enter getdir
+recv_exact 4: Success
+succ
+recv_int: 1, 1
+recv_exact 1: Success
+succ
+recv_string: ., 1
+send_exact 4: succ
+send_int: 1, 1
+send_exact 1: succ
+send_string: ., 1
+send_exact 4: succ
+send_int: 5, 1
+send_exact 4: succ
+send_int: 3, 1
+send_exact 3: succ
+send_string: bin, 1
+send_exact 4: succ
+send_int: 1, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 7: succ
+send_string: eclipse, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 17, 1
+send_exact 17: succ
+send_string: my_favorite_songs, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 14, 1
+send_exact 14: succ
+send_string: student_grades, 1
+[... 15424 lines skipped ...]
+send_exact 4: succ
+send_int: 3, 1
+send_exact 3: succ
+send_string: f14, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 3, 1
+send_exact 3: succ
+send_string: f10, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 3, 1
+send_exact 3: succ
+send_string: s10, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 8, 1
+send_exact 8: succ
+send_string: binaries, 1
+send_exact 4: succ
+send_int: 1, 1
+send_exact 4: succ
+send_int: 7, 1
+send_exact 7: succ
+send_string: eclipse, 1
+send_exact 4: succ
+send_int: 0, 1
+send_exact 4: succ
+send_int: 17, 1
+send_exact 17: succ
+send_string: midterm_solutions, 1
+send_exact 4: succ
+send_int: 0, 1
+
+recv_exact 4: Success
+succ
+recv_int: 8, 1
+enter getdir
+recv_exact 4: Success
+succ
+recv_int: 1, 1
+recv_exact 1: Success
+succ
+recv_string: ., 1
+send_exact 4: succ
+send_int: 1, 1
+send_exact 1: ---------end---------
+{ "scores": { "bookworm1": 2, "bookworm2": 0, "bookworm3": 2, "super-reads" : 4, "author1": 2, "author2": 2, "author3": 2, "fast1": 2, "fast2": 0, "modes": 2, "deleted": 2, "list": 2, "tree": 3, "badbadfile": 0,  "notyourfile1": 0, "notyourfile2": 3, "mem" : 0  } }
+
+Score for this problem: 0.0
+
+Graded by: 
