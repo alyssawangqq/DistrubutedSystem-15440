@@ -176,6 +176,9 @@ int main(int argc, char**argv) {
 
 	rv = listen(sockfd, 5);
 	if (rv<0) err(1,0);
+
+	int i = 0;
+
 	while (1) {
 		sa_size = sizeof(struct sockaddr_in);
 		fprintf(stderr, "accpeting\n");
@@ -187,11 +190,12 @@ int main(int argc, char**argv) {
 			continue;
 		}
 		DUMP;
-		pthread_t thread_id;
-		if(pthread_create(&thread_id, NULL, client_handler, (void*)(intptr_t)sessfd) < 0) {
+		pthread_t thread_id[100];
+		if(pthread_create(&thread_id[i], NULL, client_handler, (void*)(intptr_t)sessfd) < 0) {
 			fprintf(stderr, "fail to create thread\n");
 			return 1;
 		}
+		i++;
 		fprintf(stderr, "handle client\n");
 		//while(handle(sessfd));
 
