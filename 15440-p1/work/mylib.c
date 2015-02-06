@@ -76,7 +76,6 @@ void reconnect() {
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../include/dirtree.h"
 #include "util.h"
 
 struct OpenedFile {
@@ -245,12 +244,20 @@ ssize_t getdirentries(int fd, char *buf, size_t nbytes , off_t *basep) {
 
 struct dirtreenode* getdirtree(const char *path) {
 	fprintf(stderr, "mylib: getdirtree called for path %s\n", path);
-	return orig_getdirtree(path);
+	struct dirtreenode* ret_node;
+	if(send_string(sockfd, path) &&
+			recv_dirtreenode(sockfd, &ret_node)) {
+		return ret_node;
+	}
+	//return orig_getdirtree(path);
 }
 
 void freedirtree(struct dirtreenode* dt) {
 	fprintf(stderr, "mylib: freedirtree called for path %s\n", dt->name);
-	orig_freedirtree(dt);
+	if(!send_dirtreenode(sockfd, dt)) {
+		return;
+	}
+	//orig_freedirtree(dt);
 }
 
 void _init(void) {

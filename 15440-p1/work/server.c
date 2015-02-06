@@ -95,16 +95,7 @@ bool handle(int clientfd) {
 		fprintf(stderr, "read\n");
 		if(recv_int(clientfd, &fd) && 
 				recv_int(clientfd, &len)) {
-			//while(len > 0) {
-			//fprintf(stderr, "len debug");
 			retlen = read(fd, buf, len);
-			//if(retlen == 0) {
-			//	break;
-			//}
-			//fprintf(stderr, "len debug %i \n", len);
-			//fprintf(stderr, "retlen debug %i \n", retlen);
-			//	len -= retlen;
-			//}
 			send_int(clientfd, retlen);
 			send_exact(clientfd, buf, retlen, 0);
 		}else {
@@ -157,6 +148,23 @@ bool handle(int clientfd) {
 			if(!send_int(clientfd, __xstat(ver, buf, &st))) {
 				return false;
 			}
+		}else {
+			return false;
+		}
+	}
+	if(func == GETDIRENTRIES) {
+	}
+	if(func == GETDIRTREE) {
+		struct dirtreenode* ret_node;
+		if(!recv_string(clientfd, buf) ||
+				!send_dirtreenode(clientfd, getdirtree(buf))) {
+			return false;
+		}
+	}
+	if(func == FREEDIRTREE) {
+		struct dirtreenode* dir;
+		if(recv_dirtreenode(clientfd, &dir)) {
+			freedirtree(dir);
 		}else {
 			return false;
 		}

@@ -109,3 +109,43 @@ bool recv_string(int fd, char* str) {
 	debug("recv_string: %s, %d\n", str, ret);
 	return ret;
 }
+
+bool send_dirtreenode(int fd, struct dirtreenode* node) {
+	if (!send_string(fd, node->name) ||
+			!send_int(fd, node->num_subdirs)) {
+		return false;
+	}
+	for (int i = 0; i < node->num_subdirs; i++) {
+		if (!send_dirtreenode(fd, node->subdirs[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool recv_ditreenode(int fd, struct dirtreenode** node) {
+	struct dirtreenode* new_node = malloc(sizeof(struct dirtreenode));
+	new_node->name = malloc(sizeof(char) * (MAX_STRING_LEN + 1));
+	if(!recv_string(fd, new_node->name) ||
+			!recv_int(fd, &new_node->num_subdirs)) {
+		return false;
+	}else {
+		new_node->subdirs = malloc(sizeof(struct dirtreenode*) * new_node->num_subdirs);
+		for (int i = 0; i < new_node->num_subdirs; i++) {
+			if(!recv_ditreenode(fd, &new_node->subdirs[i])) {
+				return false;
+			}
+		}
+		*node = new_node;
+	}
+	return true;
+}
+
+//bool init_ditreenode(struct dirtreenode* node, int numb_subdir) { //out put node
+//	for (int i = 0; i < node->num_subdirs; i++) {
+//		dirtreenode* new_node = malloc(sizeof(struct dirtreenode));
+//		node->subdirs[i] = new_node;
+//		init_ditreenode(node->subdirs[i]);
+//	}
+//	return true;
+//}
