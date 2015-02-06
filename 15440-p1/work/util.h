@@ -1,17 +1,38 @@
 #ifndef __UTIL__
 #define __UTIL__
 
+#include <stdbool.h>
 #include <stdio.h>
 
-enum system_call {
+#define MAX_STRING_LEN 256
+
+enum SystemCall {
 	OPEN,
-	READ,
 	WRITE,
-	CLOSE
+	CLOSE,
+	READ,
+	LSEEK,
+	__XSTAT,
+	UNLINK,
+	GETDIRENTRIES,
+	GETDIRTREE,
+	FREEDIRTREE,
 };
 
-int32_t read_int32(int sessfd);
-char* read_string(int sessfd, int32_t size);
-void send_int_to_client(int32_t* fd, int sessfd);
-void send_byte_to_client(char* file, int32_t size, int sessfd);
+bool send_exact(int fd, const void* buf, int size, int flags);
+
+bool write_exact(int fd, const void* buf, int size);
+
+bool read_exact(int fd, void* buf, int size);
+
+bool recv_exact(int fd, void* buf, int size, int flags);
+
+bool send_int(int fd, int i);
+
+bool send_string(int fd, const char* str);
+
+bool recv_int(int fd, int* i);
+
+bool recv_string(int fd, char* str);
+
 #endif
