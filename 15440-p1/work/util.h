@@ -35,4 +35,8 @@ bool recv_int(int fd, int* i);
 
 bool recv_string(int fd, char* str);
 
+bool send_int64(int fd, int i);
+
+bool recv_int64(int fd, int* i);
+
 #endif

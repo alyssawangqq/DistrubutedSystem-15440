@@ -65,6 +65,12 @@ bool send_int(int fd, int i) {
 	return ret;
 }
 
+bool send_int64(int fd, int i) {
+  bool ret = send_exact(fd, &i, 8, 0);
+  debug("send_int64: %d, %d\n", i, ret);
+  return ret;
+}
+
 bool send_string(int fd, const char* str) {
 	size_t len = strlen(str);
 	bool ret;
@@ -80,6 +86,12 @@ bool send_string(int fd, const char* str) {
 bool recv_int(int fd, int* i) {
 	bool ret = recv_exact(fd, i, 4, 0);
 	debug("recv_int: %d, %d\n", *i, ret);
+	return ret;
+}
+
+bool recv_int64(int fd, int* i) {
+	bool ret = recv_exact(fd, i, 8, 0);
+	debug("recv_int64: %d, %d\n", *i, ret);
 	return ret;
 }
 

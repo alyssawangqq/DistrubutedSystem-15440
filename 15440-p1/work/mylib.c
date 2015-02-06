@@ -201,7 +201,19 @@ off_t lseek(int fildes, off_t offset, int whence) {
 int __xstat(int ver, const char * path, struct stat * stat_buf) {
 	fprintf(stderr, "mylib: __xstat called for path %s", path);
 	if(send_int(sockfd, ver) &&
-			send_string(sockfd, path) 
+			send_string(sockfd, path) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_ino) &&
+			send_int(sockfd, stat_buf->st_mode) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
+			send_int(sockfd, stat_buf->st_dev) &&
 			) {
 			//TODO
 	}

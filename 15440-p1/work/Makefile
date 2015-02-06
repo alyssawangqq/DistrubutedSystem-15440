@@ -7,7 +7,7 @@ mylib.so: mylib.o util.o
 	ld -shared -o mylib.so mylib.o util.o -ldl
 
 server: server.c util.o
-	gcc -Wall -lpthread -o server server.c util.o
+	gcc -Wall -pthread -o server server.c util.o
 
 util.o: util.c util.h
 	gcc -Wall -fPIC -DPIC -c -o util.o util.c
