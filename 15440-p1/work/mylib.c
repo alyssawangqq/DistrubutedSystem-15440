@@ -239,22 +239,43 @@ int unlink(const char *path) {
 
 ssize_t getdirentries(int fd, char *buf, size_t nbytes , off_t *basep) {
 	fprintf(stderr, "mylib: getdirentries called for fd %d\n", fd);
-	return orig_getdirentries(fd, buf, nbytes, basep);
+	int ret;
+	if(send_int(sockfd, GETDIRENTRIES) &&
+			send_int(sockfd, fd) &&
+			send_int(sockfd, nbytes) &&
+			send_int64(sockfd, (intptr_t)basep) &&
+			recv_int(sockfd, &ret)) {
+		if(ret > 0) {
+			recv_exact(sockfd, buf, ret, 0);
+			return ret;
+		}else {
+			return 0;
+		}
+	}else {
+		reconnect();
+	}
+	return -1;
+	//return orig_getdirentries(fd, buf, nbytes, basep);
 }
 
 struct dirtreenode* getdirtree(const char *path) {
 	fprintf(stderr, "mylib: getdirtree called for path %s\n", path);
 	struct dirtreenode* ret_node;
-	if(send_string(sockfd, path) &&
+	if(send_int(sockfd, GETDIRTREE) &&
+			send_string(sockfd, path) &&
 			recv_dirtreenode(sockfd, &ret_node)) {
 		return ret_node;
+	}else {
+		fprintf(stderr, "mylib: recv dirnode fail %s\n", path);
+		return NULL;
 	}
 	//return orig_getdirtree(path);
 }
 
 void freedirtree(struct dirtreenode* dt) {
 	fprintf(stderr, "mylib: freedirtree called for path %s\n", dt->name);
-	if(!send_dirtreenode(sockfd, dt)) {
+	if(!send_int(sockfd, FREEDIRTREE) &&
+			!send_dirtreenode(sockfd, dt)) {
 		return;
 	}
 	//orig_freedirtree(dt);

@@ -111,11 +111,12 @@ bool recv_string(int fd, char* str) {
 }
 
 bool send_dirtreenode(int fd, struct dirtreenode* node) {
+	int i;
 	if (!send_string(fd, node->name) ||
 			!send_int(fd, node->num_subdirs)) {
 		return false;
 	}
-	for (int i = 0; i < node->num_subdirs; i++) {
+	for (i = 0; i < node->num_subdirs; i++) {
 		if (!send_dirtreenode(fd, node->subdirs[i])) {
 			return false;
 		}
@@ -123,16 +124,19 @@ bool send_dirtreenode(int fd, struct dirtreenode* node) {
 	return true;
 }
 
-bool recv_ditreenode(int fd, struct dirtreenode** node) {
+bool recv_dirtreenode(int fd, struct dirtreenode** node) {
+	int i;
 	struct dirtreenode* new_node = malloc(sizeof(struct dirtreenode));
 	new_node->name = malloc(sizeof(char) * (MAX_STRING_LEN + 1));
 	if(!recv_string(fd, new_node->name) ||
 			!recv_int(fd, &new_node->num_subdirs)) {
+				fprintf(stderr, "recv name and numb of sub dirtree fail \n");
 		return false;
 	}else {
 		new_node->subdirs = malloc(sizeof(struct dirtreenode*) * new_node->num_subdirs);
-		for (int i = 0; i < new_node->num_subdirs; i++) {
-			if(!recv_ditreenode(fd, &new_node->subdirs[i])) {
+		for (i = 0; i < new_node->num_subdirs; i++) {
+			if(!recv_dirtreenode(fd, &new_node->subdirs[i])) {
+				fprintf(stderr, "recv sub dirtree fail \n");
 				return false;
 			}
 		}

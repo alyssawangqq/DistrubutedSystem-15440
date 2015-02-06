@@ -1,0 +1,3 @@
+440ls [-l] <dir>
+	<dir>	directory to list(required)
+	-l	list details

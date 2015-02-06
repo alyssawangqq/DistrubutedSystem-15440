@@ -153,15 +153,30 @@ bool handle(int clientfd) {
 		}
 	}
 	if(func == GETDIRENTRIES) {
+		int fd;
+		int len, retlen;
+		off_t *bsp = NULL;
+		if(recv_int(clientfd, &fd) &&
+				recv_int(clientfd, &len) &&
+				recv_int64(clientfd, (int*)bsp)) {
+			retlen = getdirentries(fd, buf, len, bsp);
+			if(!send_int(clientfd, retlen) || 
+					!send_exact(clientfd, buf, retlen, 0)) {
+				return false;
+			}
+		}
 	}
 	if(func == GETDIRTREE) {
-		struct dirtreenode* ret_node;
+		//struct dirtreenode* ret_node;
+			fprintf(stderr, "enter getdir\n");
 		if(!recv_string(clientfd, buf) ||
 				!send_dirtreenode(clientfd, getdirtree(buf))) {
+			fprintf(stderr, "fail send or recv buf\n");
 			return false;
 		}
 	}
 	if(func == FREEDIRTREE) {
+		fprintf(stderr, "enter free dir \n");
 		struct dirtreenode* dir;
 		if(recv_dirtreenode(clientfd, &dir)) {
 			freedirtree(dir);

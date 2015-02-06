@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include "../include/dirtree.h"
 
 #define MAX_STRING_LEN 256
@@ -43,6 +44,6 @@ bool recv_int64(int fd, int* i);
 
 bool send_dirtreenode(int fd, struct dirtreenode* node);
 
-bool recv_dirtreenode(int fd, struct dirtreenode* node);
+bool recv_dirtreenode(int fd, struct dirtreenode** node);
 
 #endif
