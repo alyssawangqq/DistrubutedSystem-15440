@@ -96,13 +96,13 @@ bool handle(int clientfd) {
 		if(recv_int(clientfd, &fd) && 
 				recv_int(clientfd, &len)) {
 			//while(len > 0) {
-				//fprintf(stderr, "len debug");
-				retlen = read(fd, buf, len);
-				//if(retlen == 0) {
-				//	break;
-				//}
-				//fprintf(stderr, "len debug %i \n", len);
-				//fprintf(stderr, "retlen debug %i \n", retlen);
+			//fprintf(stderr, "len debug");
+			retlen = read(fd, buf, len);
+			//if(retlen == 0) {
+			//	break;
+			//}
+			//fprintf(stderr, "len debug %i \n", len);
+			//fprintf(stderr, "retlen debug %i \n", retlen);
 			//	len -= retlen;
 			//}
 			send_int(clientfd, retlen);
@@ -132,6 +132,33 @@ bool handle(int clientfd) {
 			}else {
 				send_int(clientfd, ret);
 			}
+		}
+	}
+	if(func == __XSTAT) {
+		struct stat st;
+		int ver;
+		if(recv_int(clientfd, &ver) &&
+				recv_string(clientfd, buf) &&
+				recv_int(sockfd, &st.st_dev) &&
+				recv_int(sockfd, &st.st_ino) &&
+				recv_int(sockfd, &st.st_mode) &&
+				recv_int(sockfd, &st.st_nlink) &&
+				recv_int(sockfd, &st.st_uid) &&
+				recv_int(sockfd, &st.st_gid) &&
+				recv_int(sockfd, &st.st_rdev) &&
+				recv_int(sockfd, &st.st_size) &&
+				recv_int(sockfd, &st.st_blksize) &&
+				recv_int(sockfd, &st.st_blocks) &&
+				recv_int(sockfd, &st.st_atime) &&
+				recv_int(sockfd, &st.st_ctime) &&) {
+			//if((ret = __xstat(ver, buf, &st)) == -1) {
+			//	send_int(clientfd, ret);
+			//}
+			if(!send_int(clientfd, __xstat(ver, buf, &st))) {
+				return false;
+			}
+		}else {
+			return false;
 		}
 	}
 	return true;
