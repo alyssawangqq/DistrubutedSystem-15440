@@ -139,18 +139,18 @@ bool handle(int clientfd) {
 		int ver;
 		if(recv_int(clientfd, &ver) &&
 				recv_string(clientfd, buf) &&
-				recv_int(sockfd, &st.st_dev) &&
-				recv_int(sockfd, &st.st_ino) &&
-				recv_int(sockfd, &st.st_mode) &&
-				recv_int(sockfd, &st.st_nlink) &&
-				recv_int(sockfd, &st.st_uid) &&
-				recv_int(sockfd, &st.st_gid) &&
-				recv_int(sockfd, &st.st_rdev) &&
-				recv_int(sockfd, &st.st_size) &&
-				recv_int(sockfd, &st.st_blksize) &&
-				recv_int(sockfd, &st.st_blocks) &&
-				recv_int(sockfd, &st.st_atime) &&
-				recv_int(sockfd, &st.st_ctime) &&) {
+				recv_int64(clientfd, (int*)&st.st_dev) &&
+				recv_int64(clientfd, (int*)&st.st_ino) &&
+				recv_int64(clientfd, (int*)&st.st_mode) &&
+				recv_int64(clientfd, (int*)&st.st_nlink) &&
+				recv_int64(clientfd, (int*)&st.st_uid) &&
+				recv_int64(clientfd, (int*)&st.st_gid) &&
+				recv_int64(clientfd, (int*)&st.st_rdev) &&
+				recv_int64(clientfd, (int*)&st.st_size) &&
+				recv_int64(clientfd, (int*)&st.st_blksize) &&
+				recv_int64(clientfd, (int*)&st.st_blocks) &&
+				recv_int64(clientfd, (int*)&st.st_atime) &&
+				recv_int64(clientfd, (int*)&st.st_ctime)) {
 			//if((ret = __xstat(ver, buf, &st)) == -1) {
 			//	send_int(clientfd, ret);
 			//}
