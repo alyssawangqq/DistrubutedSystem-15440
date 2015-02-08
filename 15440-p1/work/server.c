@@ -9,248 +9,281 @@
 #include <err.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include<pthread.h>
+#include <pthread.h>
+#include <errno.h>
+#include <assert.h>
+#include <dirent.h>
+#include <netinet/tcp.h>
 
 #include "util.h"
+#include "../include/dirtree.h"
 
-#define BUF_LEN 4096
-#define DUMP fprintf(stderr, "%s:%d\n", __FILE__, __LINE__)
+#define BUF_LEN 1000001
+
+typedef enum Status {
+  OK,
+  SRC_ERROR,
+  DST_ERROR,
+} Status;
+
+bool read_exact(int fd, void* buff, int size) {
+  while (size > 0) {
+    int ret = read(fd, buff, size);
+    if (ret <= 0) {
+      return false;
+    }
+    buff = (char*)buff + ret;
+    size -= ret;
+  }
+  return true;
+}
+
+bool write_exact(int fd, const void* buff, int size) {
+  while (size > 0) {
+    int ret = write(fd, buff, size);
+    if (ret <= 0) {
+      return false;
+    }
+    buff = (char*)buff + ret;
+    size -= ret;
+  }
+  return true;
+}
 
 int min(int a, int b) {
-	if (a < b) {
-		return a;
-	}
-	return b;
+  if (a < b) {
+    return a;
+  }
+  return b;
 }
 
-bool handle(int clientfd) {
-	fprintf(stderr, "\n");
-	char buf[BUF_LEN];
-	int func;
-	//fprintf(stderr, "client fd is :%d\n", clientfd);
-	if (!recv_int(clientfd, &func)) {
-		fprintf(stderr, "fail recv func\n");
-		return false;
-	}
-	if (func == OPEN) {
-		fprintf(stderr, "open\n");
-		int flags;
-		int mode;
-		int ret;
-		if (recv_string(clientfd, buf) &&
-				recv_int(clientfd, &flags) &&
-				(!(flags & O_CREAT) || recv_int(clientfd, &mode))) {
-			if (flags & O_CREAT) {
-				ret = open(buf, flags, mode);
-			} else {
-				ret = open(buf, flags);
-			}
-		} else {
-			return false;
-		}
-		return send_int(clientfd, ret);
-	}
-	if (func == CLOSE) {
-		fprintf(stderr, "close\n");
-		int fd;
-		int ret;
-		if (recv_int(clientfd, &fd)) {
-			ret = close(fd);
-		} else {
-			return false;
-		}
-		return send_int(clientfd, ret);
-	}
-	if (func == WRITE) {
-		fprintf(stderr, "write\n");
-		int len;
-		int fd;
-		//int ret = -1;
-		if (recv_int(clientfd, &fd) &&
-				recv_int(clientfd, &len)) {
-			//ret = len;
-			while (len > 0) {
-				int recv_len = min(len, BUF_LEN);
-				DUMP;
-				if (!recv_exact(clientfd, buf, recv_len, 0)) {
-					return false;
-				}
-				if (!write_exact(fd, buf, recv_len)) {
-					DUMP;
-					//ret = -1;
-					return false;
-				}
-				len -= recv_len;
-			}
-		} else {
-			DUMP;
-			return false;
-		}
-		DUMP;
-	}
-	if(func == READ) {
-		int len;
-		int fd;
-		int retlen;
-		fprintf(stderr, "read\n");
-		if(recv_int(clientfd, &fd) && 
-				recv_int(clientfd, &len)) {
-			retlen = read(fd, buf, len);
-			send_int(clientfd, retlen);
-			send_exact(clientfd, buf, retlen, 0);
-		}else {
-			return false;
-		}
-	}
-	if(func == LSEEK) {
-		int fd, whence, offset;
-		if(recv_int(clientfd, &fd)&&
-				(recv_int(clientfd, &offset))&&
-				(recv_int(clientfd, &whence))) {
-			if(!send_int(clientfd, lseek(fd, (off_t)offset, whence))) {
-				return false;	
-			}
-		}else {
-			return false;
-		}
-	}
-	if(func == UNLINK) {
-		int ret;
-		if(recv_string(clientfd, buf)) {
-			if((ret = unlink(buf)) != 0) {
-				fprintf(stderr, "unlink err.\n");
-				return false;
-			}else {
-				send_int(clientfd, ret);
-			}
-		}
-	}
-	if(func == __XSTAT) {
-		struct stat st;
-		int ver;
-		if(recv_int(clientfd, &ver) &&
-				recv_string(clientfd, buf) &&
-				recv_int64(clientfd, (int*)&st.st_dev) &&
-				recv_int64(clientfd, (int*)&st.st_ino) &&
-				recv_int64(clientfd, (int*)&st.st_mode) &&
-				recv_int64(clientfd, (int*)&st.st_nlink) &&
-				recv_int64(clientfd, (int*)&st.st_uid) &&
-				recv_int64(clientfd, (int*)&st.st_gid) &&
-				recv_int64(clientfd, (int*)&st.st_rdev) &&
-				recv_int64(clientfd, (int*)&st.st_size) &&
-				recv_int64(clientfd, (int*)&st.st_blksize) &&
-				recv_int64(clientfd, (int*)&st.st_blocks) &&
-				recv_int64(clientfd, (int*)&st.st_atime) &&
-				recv_int64(clientfd, (int*)&st.st_ctime)) {
-			//if((ret = __xstat(ver, buf, &st)) == -1) {
-			//	send_int(clientfd, ret);
-			//}
-			if(!send_int(clientfd, __xstat(ver, buf, &st))) {
-				return false;
-			}
-		}else {
-			return false;
-		}
-	}
-	if(func == GETDIRENTRIES) {
-		fprintf(stderr, "enter get direntries\n");
-		int fd;
-		int len, retlen;
-		off_t bsp = 0;
-		if(recv_int(clientfd, &fd) &&
-				recv_int(clientfd, &len)){ //&&
-				fprintf(stderr, "read fd, len success\n");
-				//recv_int64(clientfd, bsp)) {
-			retlen = getdirentries(fd, buf, len, &bsp);
-			if(!send_int(clientfd, retlen) || 
-					!send_exact(clientfd, buf, retlen, 0)) {
-				return false;
-			}
-		}
-	}
-	if(func == GETDIRTREE) {
-		struct dirtreenode* ret_node;
-		fprintf(stderr, "enter getdir\n");
-		if(recv_string(clientfd, buf)) {
-			ret_node = getdirtree(buf);
-			if(!send_dirtreenode(clientfd, ret_node)) {
-				fprintf(stderr, "fail send or recv buf\n");
-			}
-			freedirtree(ret_node);
-		}
-	}
-	//if(func == FREEDIRTREE) {
-	//	fprintf(stderr, "enter free dir \n");
-	//	struct dirtreenode* dir;
-	//	if(recv_dirtreenode(clientfd, &dir)) {
-	//		freedirtree(dir);
-	//	}else {
-	//		return false;
-	//	}
-	//}
-	return true;
+Status pipeline_exact(int dstfd, int srcfd, int len) {
+  char buff[BUF_LEN];
+  while (len > 0) {
+    int actual = min(len, BUF_LEN);
+    if (!read_exact(srcfd, buff, actual)) {
+      return SRC_ERROR;
+    }
+    if (!write_exact(dstfd, buff, actual)) {
+      return DST_ERROR;
+    }
+    len -= actual;
+  }
+  return OK;
 }
 
-void* client_handler(void* clientfd_desc) {
-	int clientfd = (intptr_t)clientfd_desc;
-	fprintf(stderr, "fd is : %d\n", clientfd);
-	DUMP;
-	while(handle(clientfd));
-	DUMP;
-	close(clientfd);
-	return 0;
+bool handle_open(int sockfd, fd_set* opened_files) {
+  char buff[BUF_LEN];
+  int32_t flags;
+  int32_t mode;
+  int32_t ret;
+  return recv_string(sockfd, buff) &&
+    recv_int(sockfd, &flags) &&
+    recv_int(sockfd, &mode) &&
+    (ret = open(buff, flags, mode), true) &&
+    debug("open(%s, %d, %d) = %d\n", buff, flags, mode, ret) &&
+    (ret == -1 || (FD_SET(ret, opened_files), true)) &&
+    send_int(sockfd, ret) &&
+    send_int(sockfd, errno);
+}
+
+bool handle_close(int sockfd, fd_set* opened_files) {
+  int32_t fd;
+  int32_t ret;
+  return recv_int(sockfd, &fd) &&
+    (FD_ISSET(fd, opened_files) ? (FD_CLR(fd, opened_files), true) : (fd = -18, true)) &&
+    (ret = close(fd), true) &&
+    debug("close(%d) = %d\n", fd, ret) &&
+    send_int(sockfd, ret) &&
+    send_int(sockfd, errno);
+}
+
+bool handle_read(int sockfd, const fd_set* opened_files) {
+  char buff[BUF_LEN];
+  int32_t fd, ret, size;
+  return recv_int(sockfd, &fd) &&
+    (FD_ISSET(fd, opened_files) || (fd = -18, true)) &&
+    recv_int(sockfd, &size) &&
+    (ret = read(fd, buff, min(size, BUF_LEN)), true) &&
+    debug("read(%d, ..., %d) = %d\n", fd, size, ret) &&
+    send_int(sockfd, ret) &&
+    send_int(sockfd, errno) &&
+    (ret == -1 || send_exact(sockfd, buff, ret));
+}
+
+bool handle_write(int sockfd, const fd_set* opened_files) {
+  int32_t len, fd;
+  Status status;
+  return recv_int(sockfd, &fd) &&
+    (FD_ISSET(fd, opened_files) || (fd = -18, true)) &&
+    recv_int(sockfd, &len) &&
+    (status = pipeline_exact(fd, sockfd, len), status != SRC_ERROR) &&
+    debug("pipeline_exact(%d, %d, %d) = %d\n", fd, sockfd, len, status) &&
+    send_int(sockfd, status == OK ? len : -1) &&
+    send_int(sockfd, errno);
+}
+
+bool handle_lseek(int sockfd, const fd_set* opened_files) {
+  int32_t fd, offset, whence, ret;
+  return recv_int(sockfd, &fd) &&
+    (FD_ISSET(fd, opened_files) || (fd = -18, true)) &&
+    recv_int(sockfd, &offset) &&
+    recv_int(sockfd, &whence) &&
+    (ret = lseek(fd, offset, whence), true) &&
+    debug("lseek(%d, %d, %d) = %d\n", fd, offset, whence, ret) &&
+    send_int(sockfd, ret) &&
+    send_int(sockfd, errno);
+}
+
+bool handle_stat(int sockfd) {
+  char buff[BUF_LEN];
+  int32_t ret;
+  struct stat st;
+  return recv_string(sockfd, buff) &&
+    (ret = stat(buff, &st), true) &&
+    debug("stat(%s, ...) = %d\n", buff, ret) &&
+    send_int(sockfd, ret == -1 ? -1 : sizeof(st)) &&
+    send_int(sockfd, errno) &&
+    (ret == -1 || send_exact(sockfd, &st, sizeof(st)));
+}
+
+bool handle_xstat(int sockfd) {
+  char buff[BUF_LEN];
+  int32_t ver;
+  int32_t ret;
+  struct stat st;
+  return recv_int(sockfd, &ver) &&
+    recv_string(sockfd, buff) &&
+    (ret = __xstat(ver, buff, &st), true) &&
+    debug("xstat(%d, %s, ...) = %d\n", ver, buff, ret) &&
+    send_int(sockfd, ret == -1 ? -1 : sizeof(st)) &&
+    send_int(sockfd, errno) &&
+    (ret == -1 || send_exact(sockfd, &st, sizeof(st)));
+}
+
+bool handle_unlink(int sockfd) {
+  char buff[BUF_LEN];
+  int32_t ret;
+  return recv_string(sockfd, buff) &&
+    (ret = unlink(buff), true) &&
+    debug("unlink(%s) = %d\n", buff, ret) &&
+    send_int(sockfd, ret) &&
+    send_int(sockfd, errno);
+}
+
+bool handle_getdirentries(int sockfd, const fd_set* opened_files) {
+  char buff[BUF_LEN];
+  int32_t ret, fd, size;
+  int64_t base;
+  return recv_int(sockfd, &fd) &&
+    (FD_ISSET(fd, opened_files) || (fd = -18, true)) &&
+    recv_int(sockfd, &size) &&
+    recv_int64(sockfd, &base) &&
+    debug("getdirentries(%d, ..., %d, %ld) = ", fd, size, base) &&
+    (ret = getdirentries(fd, buff, min(size, BUF_LEN), &base), true) &&
+    debug("%d, %ld\n", ret, base) &&
+    send_int(sockfd, ret) &&
+    (ret == -1 || send_exact(sockfd, buff, ret)) &&
+    (ret == -1 || send_int64(sockfd, base)) &&
+    send_int(sockfd, errno);
+}
+
+bool handle_getdirtree(int sockfd) {
+  char buff[MAX_STRING_LEN+1];
+  return recv_string(sockfd, buff) &&
+    debug("getdirtree(%s)\n", buff) &&
+    send_dirtree(sockfd, buff);
+}
+
+bool dispatch(int sockfd, fd_set* opened_files) {
+  int func;
+  if (!recv_int(sockfd, &func)) {
+    return false;
+  }
+  enum SystemCall ftype = func;
+  switch (ftype) {
+  case OPEN:
+    return handle_open(sockfd, opened_files);
+  case CLOSE:
+    return handle_close(sockfd, opened_files);
+  case READ:
+    return handle_read(sockfd, opened_files);
+  case WRITE:
+    return handle_write(sockfd, opened_files);
+  case LSEEK:
+    return handle_lseek(sockfd, opened_files);
+  case STAT:
+    return handle_stat(sockfd);
+  case XSTAT:
+    return handle_xstat(sockfd);
+  case UNLINK:
+    return handle_unlink(sockfd);
+  case GET_DIR_ENTRIES:
+    return handle_getdirentries(sockfd, opened_files);
+  case GET_DIR_TREE:
+    return handle_getdirtree(sockfd);
+  };
+  return false;
+}
+
+void* handle(void* data) {
+  int sockfd = (intptr_t)data;
+  fd_set* opened_files = malloc(sizeof(fd_set));
+  FD_ZERO(opened_files);
+  while ((debug("client=%d, ", sockfd), dispatch(sockfd, opened_files)));
+  close(sockfd);
+  free(opened_files);
+  return NULL;
 }
 
 #include <stdio.h>
 
 int main(int argc, char**argv) {
-	if (BUF_LEN < MAX_STRING_LEN+1) {
-		return 1;
-	}
+  if (BUF_LEN < MAX_STRING_LEN+1) {
+    return 1;
+  }
 
-	char *serverport;
-	unsigned short port;
-	int sockfd,rv, sessfd;
-	struct sockaddr_in srv, cli;
-	socklen_t sa_size;
+  char *serverport;
+  unsigned short port;
+  int sockfd, sessfd, rv;
+  struct sockaddr_in srv, cli;
+  socklen_t sa_size;
 
-	serverport = getenv("serverport15440");
-	if (serverport) port = (unsigned short)atoi(serverport);
-	else port=15440;
+  serverport = getenv("serverport15440");
+  if (serverport) port = (unsigned short)atoi(serverport);
+  else port=15440;
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd<0) err(1, 0);
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sockfd<0) err(1, 0);
 
-	memset(&srv, 0, sizeof(srv));
-	srv.sin_family = AF_INET;
-	srv.sin_addr.s_addr = htonl(INADDR_ANY);
-	srv.sin_port = htons(port);
+  int flag = 1;
+  int result = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
+  if (result < 0) {
+    return -1;
+  }
 
-	rv = bind(sockfd, (struct sockaddr*)&srv, sizeof(struct sockaddr));
-	if (rv<0) err(1,0);
+  memset(&srv, 0, sizeof(srv));
+  srv.sin_family = AF_INET;
+  srv.sin_addr.s_addr = htonl(INADDR_ANY);
+  srv.sin_port = htons(port);
 
-	rv = listen(sockfd, 5);
-	if (rv<0) err(1,0);
+  rv = bind(sockfd, (struct sockaddr*)&srv, sizeof(struct sockaddr));
+  if (rv<0) err(1,0);
 
-	while (1) {
-		sa_size = sizeof(struct sockaddr_in);
-		fprintf(stderr, "accpeting\n");
-		DUMP;
-		sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
-		DUMP;
-		if (sessfd<0) {
-			DUMP;
-			continue;
-		}
-		DUMP;
-		pthread_t thread_id;
-		if(pthread_create(&thread_id, NULL, client_handler, (void*)(intptr_t)sessfd) < 0) {
-			fprintf(stderr, "fail to create thread\n");
-			return 1;
-		}
-		fprintf(stderr, "handle client\n");
-		//while(handle(sessfd));
-	}
+  rv = listen(sockfd, 5);
+  if (rv<0) err(1,0);
+  while (1) {
+    sa_size = sizeof(struct sockaddr_in);
+    debug("accpeting\n");
+    sessfd = accept(sockfd, (struct sockaddr *)&cli, &sa_size);
+    if (sessfd<0) {
+      continue;
+    }
+    pthread_t th;
+    if (pthread_create(&th, NULL, handle, (void*)(intptr_t)sessfd) != 0 || pthread_detach(th) != 0) {
+      close(sessfd);
+    }
+  }
 
-	return 0;
+  return 0;
 }

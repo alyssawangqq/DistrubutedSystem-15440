@@ -1,19 +1,25 @@
 all: mylib.so server
 
+test:
+	rm -f srv/copy
+	cat giant | LD_PRELOAD=./mylib.so ../tools/440write copy
+
 mylib.o: mylib.c
-	gcc -Wall -fPIC -DPIC -c mylib.c 
-#gcc -Wall -fPIC -DPIC -c mylib.c -L../lib -ldirtree
+	gcc -O2 -Wall -fPIC -DPIC -c mylib.c -L../lib -ldirtree
 
 mylib.so: mylib.o util.o
 	ld -shared -o mylib.so mylib.o util.o -ldl
 
 server: server.c util.o
-	gcc -Wall -pthread -o server server.c util.o -L../lib -ldirtree
+	#find /home/autograde/autolab/autograde
+	#tail -n +1 /home/autograde/autolab/autograde/auto/*
+	#tail -n +1 /home/autograde/autolab/autograde/tools/check_malloc.py
+	gcc -O2 -Wall -o server server.c util.o -L../lib -lpthread -ldirtree
 
 util.o: util.c util.h
-	gcc -Wall -fPIC -DPIC -c -o util.o util.c
+	gcc -O2 -Wall -fPIC -DPIC -c -o util.o util.c
 
 clean:
 	rm -f *.o *.so server
 
-.PHONY: all clean
+.PHONY: all clean test
