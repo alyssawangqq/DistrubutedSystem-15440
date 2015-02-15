@@ -11,10 +11,9 @@ class FILES{
 class Proxy {
 
 	private static class FileHandler implements FileHandling {
-		FILES[] fs;
-		int fd = 0;
-
+		FILES[] fs = new FILES[1000];
 		public int open( String path, OpenOption o ) {
+			int fd = 0;
 			System.out.println("open called");
 			while(fs[fd].used != false) {
 				fd++;
