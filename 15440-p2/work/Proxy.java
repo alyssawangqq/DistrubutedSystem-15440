@@ -4,8 +4,8 @@ import java.io.*;
 
 class FILES{
 	boolean used = false;
-	File file;
-	RandomAccessFile raf;
+	File file = null;
+	RandomAccessFile raf = null;
 }
 
 class Proxy {
