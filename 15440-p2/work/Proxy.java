@@ -2,18 +2,63 @@
 
 import java.io.*;
 
+class FILES{
+	boolean used = false;
+	File file;
+	RandomAccessFile raf;
+}
+
 class Proxy {
 
 	private static class FileHandler implements FileHandling {
+		FILES[] fs;
+		int fd = 0;
 
 		public int open( String path, OpenOption o ) {
 			System.out.println("open called");
-			return Errors.ENOSYS;
+			while(fs[fd].used != false) {
+				fd++;
+			}
+			fs[fd].file = new File(path);
+			try{
+				switch(o) {
+					case CREATE:
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						break;
+					case CREATE_NEW:
+						if(fs[fd].file.exists() && !fs[fd].file.isDirectory()) return -1;
+						else
+							fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						break;
+					case READ:
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
+						break;
+					case WRITE:
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						break;
+				}			
+			}catch (IOException e) {
+				e.printStackTrace();
+				return -1;
+			}
+
+			return -1;
+			//return Errors.ENOSYS;
 		}
 
 		public int close( int fd ) {
 			System.out.println("close called");
-			return Errors.ENOSYS;
+			try{
+				fs[fd].raf.close();
+				fs[fd].used = false;
+				fs[fd].raf = null;
+				fs[fd].file = null;
+			}catch (IOException e) {
+				e.printStackTrace();
+				return -1;
+			}
+			//return Errors.ENOSYS;
+			return 1;
 		}
 
 		public long write( int fd, byte[] buf ) {
@@ -23,7 +68,13 @@ class Proxy {
 
 		public long read( int fd, byte[] buf ) {
 			System.out.println("read called");
-			return Errors.ENOSYS;
+			try {
+				fs[fd].raf.read(buf);
+			}catch (IOException e){
+				e.printStackTrace();
+			}
+			return buf.length;
+			//return Errors.ENOSYS;
 		}
 
 		public long lseek( int fd, long pos, LseekOption o ) {
