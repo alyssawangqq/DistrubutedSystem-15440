@@ -60,6 +60,7 @@ class Proxy {
 
 		public int close( int fd ) {
 			System.err.println("close called");
+			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try{
 				fs[fd].raf.close();
 				fs[fd].used = false;
@@ -73,6 +74,7 @@ class Proxy {
 
 		public long write( int fd, byte[] buf ) {
 			System.err.println("write called");
+			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try {
 				fs[fd].raf.write(buf);
 			}catch (IOException e) {
@@ -83,6 +85,7 @@ class Proxy {
 
 		public long read( int fd, byte[] buf ) {
 			System.err.println("read called");
+			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try {
 				int ret = fs[fd].raf.read(buf);
 				if(ret == -1) {
@@ -97,6 +100,7 @@ class Proxy {
 
 		public long lseek( int fd, long pos, LseekOption o ) {
 			System.err.println("lseek called");
+			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try{
 				switch(o) {
 					case FROM_CURRENT:
@@ -123,7 +127,7 @@ class Proxy {
 				if(file.delete()) {
 					return 1;
 				}else {
-					if(file.exists())  return Errors.EEXIST;
+					if(!file.exists())  return Errors.ENOENT;
 					if(file.isDirectory() && file.list().length > 0) return Errors.ENOTEMPTY;
 				}
 			}catch(Exception e) {
