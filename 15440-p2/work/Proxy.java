@@ -51,8 +51,7 @@ class Proxy {
 				e.printStackTrace();
 				return -1;
 			}
-
-			return -1;
+			return fd;
 			//return Errors.ENOSYS;
 		}
 
