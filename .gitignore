@@ -13,7 +13,7 @@
 *.lo
 # Shared objects (inc. Windows DLLs)
 *.dll
-*.so
+#*.so
 *.so.*
 *.dylib
 # Executables
@@ -25,3 +25,14 @@
 *.hex
 # folder
 15440-p1/tools/
+15440-p2/tools/
+#java
+*.class
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+# Package Files #
+*.jar
+*.war
+*.ear
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
