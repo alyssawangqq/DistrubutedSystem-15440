@@ -19,9 +19,6 @@ class Proxy {
 		public int open( String path, OpenOption o ) {
 			int fd = 0;
 			System.out.println("open called");
-			//while(fs[fd] != null && fs[fd].used != false) {
-			//	fd++;
-			//}
 			while(fs[fd] !=null) {
 				if(fs[fd].used !=false) {
 					break;
@@ -66,8 +63,8 @@ class Proxy {
 				e.printStackTrace();
 				return -1;
 			}
-			//return Errors.ENOSYS;
 			return 1;
+			//return Errors.ENOSYS;
 		}
 
 		public long write( int fd, byte[] buf ) {
@@ -78,12 +75,18 @@ class Proxy {
 		public long read( int fd, byte[] buf ) {
 			System.out.println("read called");
 			try {
-				fs[fd].raf.read(buf);
+				int ret = fs[fd].raf.read(buf);
+				if(ret == -1) {
+					return 0;
+				}
+				return ret;
 			}catch (IOException e){
 				e.printStackTrace();
 				return -1;
 			}
-			return buf.length;
+			//System.out.println(buf.length);
+			//return -1;
+			//return buf.length;
 			//return Errors.ENOSYS;
 		}
 
