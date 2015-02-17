@@ -52,8 +52,9 @@ class Proxy {
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 				}			
-			}catch (IOException e) {
+			}catch (FileNotFoundException e) {
 				e.printStackTrace();
+				return Errors.ENOENT;
 			}
 			return fd;
 		}
@@ -80,7 +81,7 @@ class Proxy {
 			}catch (IOException e) {
 				e.printStackTrace();
 			}
-			return 1;
+			return buf.length;
 		}
 
 		public long read( int fd, byte[] buf ) {
