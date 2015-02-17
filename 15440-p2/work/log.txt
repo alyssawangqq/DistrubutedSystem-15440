@@ -1,0 +1,97 @@
+Autograder [Tue Feb 17 22:12:29 2015]: Received job 15440-s15_proj2ch1_2_fanyou@andrew.cmu.edu:173
+Autograder [Tue Feb 17 22:12:53 2015]: Success: Autodriver returned normally
+Autograder [Tue Feb 17 22:12:53 2015]: Here is the output from the autograder:
+---
+Autodriver: Job exited with status 0
+tar xmf autograde.tar
+cd autograde/build; tar xmzf ../../handin.tgz; CLASSPATH=`pwd`/:`pwd`/../lib make
+make[1]: Entering directory `/home/autograde/autolab/autograde/build'
+javac Proxy.java
+make[1]: Leaving directory `/home/autograde/autolab/autograde/build'
+cd autograde; CLASSPATH=`pwd`/lib:`pwd`/build ./script/grade-ch1.sh
+Checkpoint 1
+Test: Simple Read                                             pass
+Test: Simple Write                                            pass
+Test: Tricky Write                                            pass
+Test: Tricky Read Write                                       fail
+client exit value: 255.
+An operation failed incorrectly, or system lacked consistency between calls.
+client stdout:
+--------start--------
+---------end---------
+client stderr:
+--------start--------
+Init 440lib
+Got environment variable proxy15440: 127.0.0.1
+Got environment variable proxyport15440: 15337
+Hint: Why doesn't the file close?
+Hint: Does the file exist though?
+---------end---------
+proxy stdout:
+--------start--------
+RPCreceiver: Using port 15337
+---------end---------
+proxy stderr:
+--------start--------
+Hello World
+open called
+write called
+	java.io.IOException: Bad file descriptor
+	at java.io.RandomAccessFile.writeBytes0(Native Method)
+	at java.io.RandomAccessFile.writeBytes(RandomAccessFile.java:520)
+	at java.io.RandomAccessFile.write(RandomAccessFile.java:537)
+	at Proxy$FileHandler.write(Proxy.java:77)
+	at RPCreceiver$ClientHandler.run(RPCreceiver.java:148)
+at java.lang.Thread.run(Thread.java:744)
+	close called
+	open called
+	open called
+	client done called
+	---------end---------
+	Test: You're a bad, bad file.                                 fail
+	client exit value: 255.
+	A bad file operation was handled incorrectly.
+	client stdout:
+	--------start--------
+	---------end---------
+	client stderr:
+	--------start--------
+	Init 440lib
+	Got environment variable proxy15440: 127.0.0.1
+	Got environment variable proxyport15440: 15338
+	Hint: Is it a normal file?
+	---------end---------
+	proxy stdout:
+	--------start--------
+	RPCreceiver: Using port 15338
+	---------end---------
+	proxy stderr:
+	--------start--------
+	Hello World
+	open called
+	java.io.FileNotFoundException: localFile (No such file or directory)
+	at java.io.RandomAccessFile.open(Native Method)
+	at java.io.RandomAccessFile.<init>(RandomAccessFile.java:241)
+	at Proxy$FileHandler.open(Proxy.java:46)
+	at RPCreceiver$ClientHandler.run(RPCreceiver.java:103)
+at java.lang.Thread.run(Thread.java:744)
+	open called
+	java.io.FileNotFoundException: ../input/my_favorite_songs (Is a directory)
+	at java.io.RandomAccessFile.open(Native Method)
+	at java.io.RandomAccessFile.<init>(RandomAccessFile.java:241)
+	at Proxy$FileHandler.open(Proxy.java:46)
+	at RPCreceiver$ClientHandler.run(RPCreceiver.java:103)
+at java.lang.Thread.run(Thread.java:744)
+	open called
+	close called
+	unlink called
+	client done called
+	---------end---------
+	Test: Super Reads                                             pass
+	Test: Closing each other's fds                                pass
+{ "scores": {  "Simple-Read" : 2,  "Simple-Write" : 2,  "Tricky-Write" : 3,  "Tricky-Read-Write" : 0,  "Bad-Bad-Bad-File" : 0,  "Super-Read" : 4,  "Closing-each-others-file" : 3 } }
+
+Score for this problem: 0.0
+
+Graded by: 
+
