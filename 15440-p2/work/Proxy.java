@@ -151,6 +151,6 @@ class Proxy {
 
 	public static void main(String[] args) throws IOException {
 		System.err.println("Hello World");
-		(new RPCreceiver(new FileHandlingFactory())).run();
+		(new Thread(new RPCreceiver(new FileHandlingFactory()))).start();
 	}
 }
