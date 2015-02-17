@@ -38,7 +38,7 @@ class Proxy {
 						break;
 					case CREATE_NEW:
 						if(fs[fd].file.exists()) return Errors.EEXIST;
-						if(!fs[fd].file.isDirectory()) return Errors.EISDIR;
+						if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						else
 							fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
@@ -76,7 +76,8 @@ class Proxy {
 			try {
 				fs[fd].raf.write(buf);
 			}catch (IOException e) {
-				e.printStackTrace();
+				return Errors.EBADF;
+				//e.printStackTrace();
 			}
 			return buf.length;
 		}
@@ -91,9 +92,10 @@ class Proxy {
 				}
 				return ret;
 			}catch (IOException e){
-				e.printStackTrace();
+				//e.printStackTrace();
+				return Errors.EBADF;
 			}
-			return 0;
+			//return 0;
 		}
 
 		public synchronized long lseek( int fd, long pos, LseekOption o ) {

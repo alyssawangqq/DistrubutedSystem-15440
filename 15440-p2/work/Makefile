@@ -4,7 +4,7 @@ all: Proxy.class
 	javac $<
 
 clean:
-	rm -f *.class giant small
+	rm -f *.class giant small *.out
 
 test:
 	cat /tmp/giant | LD_PRELOAD=../lib/lib440lib.so ../tools/440write giant
