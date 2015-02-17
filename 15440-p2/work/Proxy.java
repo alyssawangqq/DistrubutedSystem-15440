@@ -3,11 +3,11 @@
 import java.io.*;
 
 class FILES{
-	boolean used;
+	//boolean used;
 	File file;
 	RandomAccessFile raf;
 	FILES() {
-		used = false;
+		//used = false;
 		file = null;
 		raf = null;
 	}
@@ -17,21 +17,18 @@ class Proxy {
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
 
-		public int process (String path) {
+		public synchronized int process (String path) {
 			int fd = 0;
+			if(fd >= 1000) return Errors.EMFILE;
 			while(fs[fd] !=null) {
-				if(fs[fd].used !=false) {
-					break;
-				}
 				fd++;
 			}
-			if(fd >= 1000) return Errors.EMFILE;
 			fs[fd] = new FILES();
 			fs[fd].file = new File(path);
 			return fd;
 		}
 
-		public int open( String path, OpenOption o ) {
+		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called");
 			int fd = process(path);
 			try{
@@ -59,21 +56,21 @@ class Proxy {
 			return fd;
 		}
 
-		public int close( int fd ) {
+		public synchronized int close( int fd ) {
 			System.err.println("close called");
 			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try{
 				fs[fd].raf.close();
-				fs[fd].used = false;
 				fs[fd].raf = null;
 				fs[fd].file = null;
+				fs[fd] = null;
 			}catch (IOException e) {
 				e.printStackTrace();
 			}
 			return 1;
 		}
 
-		public long write( int fd, byte[] buf ) {
+		public synchronized long write( int fd, byte[] buf ) {
 			System.err.println("write called");
 			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try {
@@ -84,7 +81,7 @@ class Proxy {
 			return buf.length;
 		}
 
-		public long read( int fd, byte[] buf ) {
+		public synchronized long read( int fd, byte[] buf ) {
 			System.err.println("read called");
 			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try {
@@ -99,7 +96,7 @@ class Proxy {
 			return 0;
 		}
 
-		public long lseek( int fd, long pos, LseekOption o ) {
+		public synchronized long lseek( int fd, long pos, LseekOption o ) {
 			System.err.println("lseek called");
 			if(fd < 0 || fs[fd] == null) return Errors.EBADF;
 			try{
@@ -121,7 +118,7 @@ class Proxy {
 			return 1;
 		}
 
-		public int unlink( String path ) {
+		public synchronized int unlink( String path ) {
 			System.err.println("unlink called");
 			try {
 				File file = new File(path);
@@ -151,6 +148,7 @@ class Proxy {
 
 	public static void main(String[] args) throws IOException {
 		System.err.println("Hello World");
-		(new Thread(new RPCreceiver(new FileHandlingFactory()))).start();
+		//(new Thread(new RPCreceiver(new FileHandlingFactory()))).start();
+		(new RPCreceiver(new FileHandlingFactory())).run();
 	}
 }
