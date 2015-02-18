@@ -7,8 +7,9 @@ clean:
 	rm -f *.class giant small *.out
 
 grep:
-	find /home/autograde/autolab/autograde
-	tail -n +1 /home/autograde/autolab/autograde/auto/*
+	#find /home/autograde/autolab/autograde
+	#tail -n +1 /home/autograde/autolab/autograde/script/grade-ch1.sh
+	#tail -n +1 /home/autograde/autolab/autograde/auto/*
 	#tail -n +1 /home/autograde/autolab/autograde/tools/check_malloc.py
 
 test:
