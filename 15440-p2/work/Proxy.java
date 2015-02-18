@@ -18,6 +18,12 @@ class Proxy {
 		FILES[] fs = new FILES[1000];
 
 		public synchronized int process (String path) {
+			//System.err.println("EBADF " + Errors.EBADF);
+			//System.err.println("EBUSY " + Errors.EBUSY);
+			//System.err.println("EEXIST " + Errors.EEXIST);
+			//System.err.println("EISDIR " + Errors.EISDIR);
+			//System.err.println("ENOENT " + Errors.ENOENT);
+			//System.err.println("ENOTDIR " + Errors.ENOTDIR);
 			int fd = 0;
 			if(fd >= 1000) return Errors.EMFILE;
 			while(fs[fd] !=null) {
@@ -57,7 +63,7 @@ class Proxy {
 						break;
 				}			
 			}catch (FileNotFoundException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				return Errors.ENOENT;
 			}
 			return fd;
@@ -93,7 +99,7 @@ class Proxy {
 			try {
 				fs[fd].raf.write(buf);
 			}catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 				return Errors.EBADF;
 			}
 			return buf.length;
@@ -109,7 +115,7 @@ class Proxy {
 				}
 				return ret;
 			}catch (IOException e){
-				e.printStackTrace();
+				//e.printStackTrace();
 				return Errors.EBADF;
 			}
 			//return 0;
