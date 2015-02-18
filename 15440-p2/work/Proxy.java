@@ -86,12 +86,13 @@ class Proxy {
 			System.err.println("close called for fd" + fd);
 			if(fd >= 2048) {
 				fd -= 2048;
-			}else {
-				return Errors.EBADF;
 			}
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("close err"); return Errors.EBADF;}
+			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("close err"); return Errors.EBADF;}
+			if(fs[fd] == null) System.err.println("null fs");
+			if(fs[fd].raf == null) System.err.println("null raf");
+			if(fs[fd].file == null) System.err.println("file null");
 			try{
-				fs[fd].raf.close();
+				if(fs[fd].raf != null) fs[fd].raf.close();
 				fs[fd].raf = null;
 				fs[fd].file = null;
 				fs[fd] = null;
@@ -106,8 +107,6 @@ class Proxy {
 			System.err.println("write called for fd" + fd);
 			if(fd >= 2048) {
 				fd -= 2048;
-			}else {
-				return Errors.EBADF;
 			}
 			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("write err"); return Errors.EBADF;}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
@@ -124,8 +123,6 @@ class Proxy {
 			System.err.println("read called for fd" + fd);
 			if(fd >= 2048) {
 				fd -= 2048;
-			}else {
-				return Errors.EBADF;
 			}
 			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("read err"); return Errors.EBADF;}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
@@ -146,8 +143,6 @@ class Proxy {
 			System.err.println("lseek called for fd" + fd);
 			if(fd >= 2048) {
 				fd -= 2048;
-			}else {
-				return Errors.EBADF;
 			}
 			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
