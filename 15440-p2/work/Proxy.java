@@ -36,6 +36,7 @@ class Proxy {
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path" + path);
 			int fd = process(path);
+			if(fs[fd].file.isDirectory()) return fd;
 			try{
 				switch(o) {
 					case CREATE:
@@ -47,9 +48,6 @@ class Proxy {
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						if(fs[fd].file.exists()) return Errors.EEXIST; 
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
-						////Potential solution
-						//if(fs[fd].file.exists()) return Errors.EEXIST;
-						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case READ:
 						System.err.println("READ");
@@ -113,7 +111,8 @@ class Proxy {
 			try {
 				fs[fd].raf.write(buf);
 			}catch (IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
+				System.err.println("write exception");
 				return Errors.EBADF;
 			}
 			return buf.length;
@@ -133,7 +132,7 @@ class Proxy {
 				}
 				return ret;
 			}catch (IOException e){
-				e.printStackTrace();
+				System.err.println("read exception");
 				return Errors.EBADF;
 			}
 			//return 0;
@@ -161,6 +160,7 @@ class Proxy {
 				}
 			}catch(IOException e) {
 				e.printStackTrace();
+				System.err.println("lseek exception");
 				return -1;
 			}
 			return 0;
@@ -176,6 +176,7 @@ class Proxy {
 					return -1;
 				}
 			}catch(Exception e) {
+				System.err.println("unlink exception");
 				e.printStackTrace();
 				return -1;
 			}
