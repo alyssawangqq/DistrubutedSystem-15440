@@ -36,7 +36,7 @@ class Proxy {
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path" + path);
 			int fd = process(path);
-			if(fs[fd].file.isDirectory()) return fd;
+			if(fs[fd].file.isDirectory()) return fd + 2048;
 			try{
 				switch(o) {
 					case CREATE:
@@ -106,12 +106,12 @@ class Proxy {
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("write err"); return Errors.EBADF;}
+			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("write err"); return Errors.EBADF;}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
 				fs[fd].raf.write(buf);
 			}catch (IOException e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 				System.err.println("write exception");
 				return Errors.EBADF;
 			}
@@ -123,7 +123,7 @@ class Proxy {
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("read err"); return Errors.EBADF;}
+			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("read err"); return Errors.EBADF;}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
 				int ret = fs[fd].raf.read(buf);
@@ -132,6 +132,7 @@ class Proxy {
 				}
 				return ret;
 			}catch (IOException e){
+				e.printStackTrace();
 				System.err.println("read exception");
 				return Errors.EBADF;
 			}
@@ -143,7 +144,7 @@ class Proxy {
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
+			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try{
 				switch(o) {
