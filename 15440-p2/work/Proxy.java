@@ -1,5 +1,4 @@
-/* Sample skeleton for proxy */
-
+/* Sample skeleton for proxy */ 
 import java.io.*;
 
 class FILES{
@@ -46,31 +45,27 @@ class Proxy {
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
+						if(fs[fd].file.exists()) return Errors.EEXIST; 
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						////Potential solution
+						//if(fs[fd].file.exists()) return Errors.EEXIST;
 						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
-						//if(fs[fd].file.exists()) return Errors.EEXIST; 
-						//Potential solution
-						if(fs[fd].file.exists()) {}//noth;
-						else 
-							fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case READ:
 						System.err.println("READ");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
-						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
 						if(!fs[fd].file.exists()) return Errors.ENOENT;
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
 						break;
 					case WRITE:
 						System.err.println("WRITE");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
-						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						if(!fs[fd].file.exists()) return Errors.ENOENT;
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 				}			
 			}catch (FileNotFoundException e) {
 				e.printStackTrace();
-				System.err.println("!!!!!");
-				System.err.println("after stack trace");
-				System.err.println("!!!!!");
 				return Errors.ENOENT;
 				//return -1;
 			}
