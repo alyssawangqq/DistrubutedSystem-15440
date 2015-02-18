@@ -7,7 +7,7 @@
 
 int main() {
 	errno = 0;
-	int fd2 = open(".", O_RDONLY);
+	int fd2 = open("a", O_RDONLY);
 	perror("");
 	printf("fd2 = %d\n", fd2);
 	return 0;
