@@ -40,7 +40,7 @@ class Proxy {
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
 						if(fs[fd].file.exists()) return Errors.EEXIST;
-						if(fs[fd].file.isDirectory()) return Errors.EISDIR;
+						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case READ:
