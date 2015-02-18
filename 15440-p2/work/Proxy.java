@@ -45,28 +45,29 @@ class Proxy {
 						break;
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
-						if(fs[fd].file.exists()) return Errors.EEXIST;
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						if(fs[fd].file.exists()) return Errors.EEXIST;
 						break;
 					case READ:
 						System.err.println("READ");
-						if(!fs[fd].file.exists()) return Errors.ENOENT;
-						if(fs[fd].file.isDirectory()) return Errors.EISDIR;
+						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
+						if(!fs[fd].file.exists()) return Errors.ENOENT;
 						break;
 					case WRITE:
 						System.err.println("WRITE");
-						if(!fs[fd].file.exists()) return Errors.ENOENT;
-						if(fs[fd].file.isDirectory()) return Errors.EISDIR;
+						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						if(!fs[fd].file.exists()) return Errors.ENOENT;
 						break;
 				}			
 			}catch (FileNotFoundException e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 				return Errors.ENOENT;
+				//return -1;
 			}
-			return fd;
+			return fd + 2048;
 		}
 
 		public int close_all() {
@@ -81,7 +82,10 @@ class Proxy {
 
 		public synchronized int close( int fd ) {
 			System.err.println("close called for fd" + fd);
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
+			if(fd >= 2048) {
+				fd -= 2048;
+			}
+			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("close err"); return Errors.EBADF;}
 			try{
 				fs[fd].raf.close();
 				fs[fd].raf = null;
@@ -95,11 +99,14 @@ class Proxy {
 
 		public synchronized long write( int fd, byte[] buf ) {
 			System.err.println("write called for fd" + fd);
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
+			if(fd >= 2048) {
+				fd -= 2048;
+			}
+			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("write err"); return Errors.EBADF;}
 			try {
 				fs[fd].raf.write(buf);
 			}catch (IOException e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 				return Errors.EBADF;
 			}
 			return buf.length;
@@ -107,7 +114,10 @@ class Proxy {
 
 		public synchronized long read( int fd, byte[] buf ) {
 			System.err.println("read called for fd" + fd);
-			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
+			if(fd >= 2048) {
+				fd -= 2048;
+			}
+			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("read err"); return Errors.EBADF;}
 			try {
 				int ret = fs[fd].raf.read(buf);
 				if(ret == -1) {
@@ -115,7 +125,7 @@ class Proxy {
 				}
 				return ret;
 			}catch (IOException e){
-				//e.printStackTrace();
+				e.printStackTrace();
 				return Errors.EBADF;
 			}
 			//return 0;
@@ -123,6 +133,9 @@ class Proxy {
 
 		public synchronized long lseek( int fd, long pos, LseekOption o ) {
 			System.err.println("lseek called for fd" + fd);
+			if(fd >= 2048) {
+				fd -= 2048;
+			}
 			if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) return Errors.EBADF;
 			try{
 				switch(o) {
