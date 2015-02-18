@@ -34,18 +34,23 @@ class Proxy {
 			try{
 				switch(o) {
 					case CREATE:
+						System.err.println("CREATE");
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case CREATE_NEW:
+						System.err.println("CREATE_NEW");
 						if(fs[fd].file.exists()) return Errors.EEXIST;
 						if(fs[fd].file.isDirectory()) return Errors.EISDIR;
-						else
-							fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case READ:
+						System.err.println("READ");
+						if(!fs[fd].file.exists()) return Errors.ENOENT;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
 						break;
 					case WRITE:
+						System.err.println("WRITE");
+						if(!fs[fd].file.exists()) return Errors.ENOENT;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 				}			
