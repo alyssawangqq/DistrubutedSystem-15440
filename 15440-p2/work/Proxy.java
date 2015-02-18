@@ -66,8 +66,9 @@ class Proxy {
 		public int close_all() {
 			int fd = 0;
 			System.err.println("close all fd");
-			while(fd++ < 1000) {
+			while(fd < 1000) {
 				if(fs[fd] != null) close(fd);
+				fd++;
 			}
 			return 1;
 		}
