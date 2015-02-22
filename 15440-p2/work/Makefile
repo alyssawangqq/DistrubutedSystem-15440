@@ -1,4 +1,4 @@
-all: Proxy.class grep
+all: Proxy.class IServer.class Server.class ClientRMIExample.class
 
 %.class: %.java
 	javac $<

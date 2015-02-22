@@ -3,7 +3,8 @@ import java.io.*;
 public class test{
 
 	public static void main (String[] args) {
-		System.err.println(method(args[0]));
+		//System.err.println(method(args[0]));
+		System.err.println(args[0]);
 	}
 
 	public static int method(String s) {

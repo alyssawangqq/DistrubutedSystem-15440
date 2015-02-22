@@ -1,28 +1,45 @@
 /* Sample skeleton for proxy */ 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
 
 class FILES{
-	//boolean used;
 	File file;
 	RandomAccessFile raf;
 	FILES() {
-		//used = false;
 		file = null;
 		raf = null;
 	}
 }
 
-class Proxy {
+class Proxy{
+	public static int port;
+	public static int cache_size;
+	public static String server_addr;
+	public static String path;
+
+	public static IServer getServerInstance(String ip, int port){
+		String url = String.format("//%s:%d/ServerService", ip, port);
+		try {
+			return (IServer) Naming.lookup (url);
+		} catch (MalformedURLException e) {
+			//you probably want to do logging more properly
+			System.err.println("Bad URL" + e);
+		} catch (RemoteException e) {
+			System.err.println("Remote connection refused to url "+ url + " " + e);
+		} catch (NotBoundException e) {
+			System.err.println("Not bound " + e);
+		}
+		return null;
+	}
+
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
 
 		public synchronized int process (String path) {
-			//System.err.println("EBADF " + Errors.EBADF);
-			//System.err.println("EBUSY " + Errors.EBUSY);
-			//System.err.println("EEXIST " + Errors.EEXIST);
-			//System.err.println("EISDIR " + Errors.EISDIR);
-			//System.err.println("ENOENT " + Errors.ENOENT);
-			//System.err.println("ENOTDIR " + Errors.ENOTDIR);
 			int fd = 0;
 			if(fd >= 1000) return Errors.EMFILE;
 			while(fs[fd] !=null) {
@@ -199,6 +216,10 @@ class Proxy {
 
 	public static void main(String[] args) throws IOException {
 		System.err.println("Hello World");
+		Proxy.server_addr = args[0];
+		Proxy.port = Integer.parseInt(args[1]);
+		Proxy.path = args[2];
+		Proxy.cache_size = Integer.parseInt(args[3]);
 		//(new Thread(new RPCreceiver(new FileHandlingFactory()))).start();
 		(new RPCreceiver(new FileHandlingFactory())).run();
 	}
