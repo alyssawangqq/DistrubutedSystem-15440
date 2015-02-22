@@ -39,7 +39,26 @@ class Proxy{
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
 
+		IServer server = null;
+
 		public synchronized int process (String path) {
+			//get server & check version
+			try{
+				server = getServerInstance(server_addr, port);
+			}
+			catch(Exception e) {
+				e.printStackTrace(); //you should actually handle exceptions properly
+			}
+			if(server == null) System.exit(1); //You should handle errors properly.
+			try {
+				String hello = server.sayHello();
+				System.out.println("Server said " + hello);
+			}
+			catch(RemoteException e) {
+				System.err.println(e); //probably want to do some better logging here.
+			}
+
+			//get fd
 			int fd = 0;
 			if(fd >= 1000) return Errors.EMFILE;
 			while(fs[fd] !=null) {
@@ -216,6 +235,7 @@ class Proxy{
 
 	public static void main(String[] args) throws IOException {
 		System.err.println("Hello World");
+		if(args.length < 4) return;
 		Proxy.server_addr = args[0];
 		Proxy.port = Integer.parseInt(args[1]);
 		Proxy.path = args[2];
