@@ -55,8 +55,27 @@ class Proxy{
 				String hello = server.sayHello();
 				System.err.println("Server said " + hello);
 				int server_version = server.getVersion(path);
-				if(!proxy_version.containsKey(path) || server_version > local_version) {System.err.println("need to get whole file"); return 0;} //get whole file
 				int local_version = proxy_version.get(path);
+				if(!proxy_version.containsKey(path) || server_version > local_version) {
+					//get whole file
+					System.err.println("need to get whole file");
+					int len = server.getFileLen(path);
+					long start = 0;
+					try {
+						BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(path));
+						while (len > 0) {
+							byte data[] = server.downloadFile(path, start, 20000);
+							len -= 20000;
+							start += 20000;
+							output.write(data, 0, data.length);
+						}
+						output.flush();
+						output.close();
+					}catch (Exception e) {
+						e.printStackTrace();
+					}
+					return 0;
+				} 
 				if(server_version == -1) return -1; // file not found on server
 				//if(server_version > local_version) {System.err.println("server have new version");} //TODO get file
 				if(server_version == local_version) {System.err.println("same version"); return 1;} //TODO just read local file
@@ -83,20 +102,20 @@ class Proxy{
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path" + path);
 			int fd = process(path);
-			switch(compareVersion(path)) {
-				case -1:
-					//not on server
-					break;
-				case 0:
-					//get file
-					break;
-				case 1:
-					//same file
-					break;
-				case 2:
-					//client newer
-					break;
-			}
+			//switch(compareVersion(path)) {
+			//	case -1:
+			//		//not on server
+			//		break;
+			//	case 0:
+			//		//get file
+			//		break;
+			//	case 1:
+			//		//same file
+			//		break;
+			//	case 2:
+			//		//client newer
+			//		break;
+			//}
 			if(fs[fd].file.isDirectory()) return fd + 2048;
 			try{
 				switch(o) {

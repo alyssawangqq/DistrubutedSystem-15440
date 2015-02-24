@@ -24,6 +24,38 @@ public class Server extends UnicastRemoteObject implements IServer {
 		return server_version.get(root_path+"/"+path);
 	}
 
+	public int getFileLen(String path) {
+		File file = new File(path); // TODO can be non exits?
+		return (int)file.length();
+	}
+
+	public byte[] downloadFile(String path, long n, int len) {
+		//int len = getFileLen(path);
+		byte buffer[] = new byte[len];
+		int off = 0;
+		try {
+			BufferedInputStream input = new BufferedInputStream(new FileInputStream(path));
+			if (input.skip(n) < 0){ 
+				// skip fail
+				System.err.println("skip err");
+				return null;
+			}
+			while(len > 0) {
+				int ret = input.read(buffer, off, len);
+				off += ret;
+				len -= ret;
+			}
+			input.close();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return(buffer);
+		//int idx = 0;
+		//while (len > 0) {
+		//	len -=20000;
+		//}
+	}
+
 	public boolean sendFile(String path) throws RemoteException {
 		return false;
 	}
