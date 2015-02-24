@@ -18,15 +18,22 @@ public class Server extends UnicastRemoteObject implements IServer {
 	}
 
 	public int getVersion(String path) throws RemoteException {
-		File f = new File(root_path+"/"+path);
+		File f = new File(root_path+path);
 		if(!f.exists()) return -1; //-1 returned by server means file not exist on server
-		if(!server_version.containsKey(root_path+"/"+path)) {server_version.put(root_path+"/"+path, 0); return 0;} //0 means init version
-		return server_version.get(root_path+"/"+path);
+		if(!server_version.containsKey(root_path+path)) {server_version.put(root_path+path, 0); return 0;} //0 means init version
+		return server_version.get(root_path+path);
 	}
 
-	public int getFileLen(String path) {
-		File file = new File(path); // TODO can be non exits?
+	public int getFileLen(String path) throws RemoteException{
+		File file = new File(root_path+path); // TODO can be non exits?
+		System.err.println(root_path+path);
 		return (int)file.length();
+		//try {
+		//	BufferedInputStream fis = new BufferedInputStream(new FileInputStream(path));
+		//}catch (Exception e) {
+		//	e.printStackTrace();
+		//}
+		//return fis.available();
 	}
 
 	public byte[] downloadFile(String path, long n, int len) {
@@ -34,14 +41,16 @@ public class Server extends UnicastRemoteObject implements IServer {
 		byte buffer[] = new byte[len];
 		int off = 0;
 		try {
-			BufferedInputStream input = new BufferedInputStream(new FileInputStream(path));
+			BufferedInputStream input = new BufferedInputStream(new FileInputStream(root_path+path));
 			if (input.skip(n) < 0){ 
 				// skip fail
 				System.err.println("skip err");
 				return null;
 			}
 			while(len > 0) {
+				System.err.println("off is: "+off+"len is: "+len);
 				int ret = input.read(buffer, off, len);
+				System.err.println("ret is: "+ret);
 				off += ret;
 				len -= ret;
 			}
