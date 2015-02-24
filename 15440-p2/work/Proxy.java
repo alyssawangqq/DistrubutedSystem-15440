@@ -1,5 +1,6 @@
 /* Sample skeleton for proxy */ 
 import java.io.*;
+import java.util.Hashtable;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -21,27 +22,27 @@ class Proxy{
 	public static String server_addr;
 	public static String path;
 
-	public static IServer getServerInstance(String ip, int port){
-		String url = String.format("//%s:%d/ServerService", ip, port);
-		try {
-			return (IServer) Naming.lookup (url);
-		} catch (MalformedURLException e) {
-			//you probably want to do logging more properly
-			System.err.println("Bad URL" + e);
-		} catch (RemoteException e) {
-			System.err.println("Remote connection refused to url "+ url + " " + e);
-		} catch (NotBoundException e) {
-			System.err.println("Not bound " + e);
-		}
-		return null;
-	}
-
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
-
 		IServer server = null;
+		Hashtable<String, Integer> proxy_version = new Hashtable<String, Integer>();
 
-		public synchronized int process (String path) {
+		public static IServer getServerInstance(String ip, int port){
+			String url = String.format("//%s:%d/ServerService", ip, port);
+			try {
+				return (IServer) Naming.lookup (url);
+			} catch (MalformedURLException e) {
+				//you probably want to do logging more properly
+				System.err.println("Bad URL" + e);
+			} catch (RemoteException e) {
+				System.err.println("Remote connection refused to url "+ url + " " + e);
+			} catch (NotBoundException e) {
+				System.err.println("Not bound " + e);
+			}
+			return null;
+		}
+
+		public int compareVersion(String path) {
 			//get server & check version
 			try{
 				server = getServerInstance(server_addr, port);
@@ -52,12 +53,22 @@ class Proxy{
 			if(server == null) System.exit(1); //You should handle errors properly.
 			try {
 				String hello = server.sayHello();
-				System.out.println("Server said " + hello);
+				System.err.println("Server said " + hello);
+				int server_version = server.getVersion(path);
+				if(!proxy_version.containsKey(path) || server_version > local_version) {System.err.println("need to get whole file"); return 0;} //get whole file
+				int local_version = proxy_version.get(path);
+				if(server_version == -1) return -1; // file not found on server
+				//if(server_version > local_version) {System.err.println("server have new version");} //TODO get file
+				if(server_version == local_version) {System.err.println("same version"); return 1;} //TODO just read local file
+				if(server_version < local_version) {System.err.println("client have new version"); return 2;} //TODO maybe push to server
 			}
 			catch(RemoteException e) {
 				System.err.println(e); //probably want to do some better logging here.
 			}
+			return 0;
+		}
 
+		public synchronized int process (String path) {
 			//get fd
 			int fd = 0;
 			if(fd >= 1000) return Errors.EMFILE;
@@ -72,6 +83,20 @@ class Proxy{
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path" + path);
 			int fd = process(path);
+			switch(compareVersion(path)) {
+				case -1:
+					//not on server
+					break;
+				case 0:
+					//get file
+					break;
+				case 1:
+					//same file
+					break;
+				case 2:
+					//client newer
+					break;
+			}
 			if(fs[fd].file.isDirectory()) return fd + 2048;
 			try{
 				switch(o) {
