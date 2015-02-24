@@ -8,9 +8,11 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 
 class FILES{
+	String path;
 	File file;
 	RandomAccessFile raf;
 	FILES() {
+		path = null;
 		file = null;
 		raf = null;
 	}
@@ -47,9 +49,9 @@ class Proxy{
 			try {
 				int len = server.getFileLen(path);
 				BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(Proxy.path+path));
-				while (len > 20000) {
+				while (len > 20000000) { // memory limit
 					System.err.println("len is: "+len+" start is: "+start);
-					byte data[] = server.downloadFile(path, start, 20000);
+					byte data[] = server.downloadFile(path, start, 20000000);
 					len -= data.length;
 					output.write(data, 0, data.length);
 					start += data.length;
@@ -66,8 +68,28 @@ class Proxy{
 				//init version
 			}catch (Exception e) {
 				e.printStackTrace();
+				return false;
 			}
 			return true; //succes
+		}
+
+		public boolean handle_uploadFile(int fd) {
+			//BufferedInputStream input = new BufferedInputStream(new FileInputStream(Proxy.path+path));
+			server.openStream(fs[fd].path);
+			if(fd >= 2048) {
+				fd -= 2048;
+			}
+			int len = (int)fs[fd].file.length;
+			int start = 0;
+			while (len > 2000000) {
+			}
+			while (len > 0) {
+				byte buffer[] = new buffer[len];
+				int ret = fs[fd].raf.read(buffer);
+				server.upLoadFile(fs[fd].path, buffer);
+				len -= ret;
+			}
+			//byte buffer[] = new buffer[(int)fs[fd].file.length];
 		}
 
 		public int compareVersion(String path) {
@@ -94,7 +116,7 @@ class Proxy{
 				} 
 				System.err.println("Clietn version " + proxy_version.get(path));
 				int local_version = proxy_version.get(path);
-				if(server_version > local_version) {System.err.println("server have new version");} //TODO get file
+				if(server_version > local_version) {System.err.println("server have new version"); return 0;} //TODO get file
 				if(server_version == local_version) {System.err.println("same version"); return 1;} //TODO just read local file
 				if(server_version < local_version) {System.err.println("client have new version"); return 2;} //TODO maybe push to server
 				return 0;
@@ -113,7 +135,8 @@ class Proxy{
 				fd++;
 			}
 			fs[fd] = new FILES();
-			fs[fd].file = new File(Proxy.path+path);
+			fs[fd].path = Proxy.path+path;
+			fs[fd].file = new File(fs[fd].path);
 			return fd;
 		}
 
@@ -192,6 +215,7 @@ class Proxy{
 				if(fs[fd].raf != null) fs[fd].raf.close();
 				fs[fd].raf = null;
 				fs[fd].file = null;
+				fs[fd].path = null;
 				fs[fd] = null;
 			}catch (IOException e) {
 				e.printStackTrace();
