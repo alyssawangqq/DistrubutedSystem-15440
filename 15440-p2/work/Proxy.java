@@ -21,11 +21,11 @@ class Proxy{
 	public static int cache_size;
 	public static String server_addr;
 	public static String path;
+	public static Hashtable<String, Integer> proxy_version = new Hashtable<String, Integer>();
 
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
 		IServer server = null;
-		Hashtable<String, Integer> proxy_version = new Hashtable<String, Integer>();
 
 		public static IServer getServerInstance(String ip, int port){
 			String url = String.format("//%s:%d/ServerService", ip, port);
@@ -43,9 +43,9 @@ class Proxy{
 		}
 
 		public boolean handle_getFile(String path) {
-			int len = server.getFileLen(path);
 			long start = 0;
 			try {
+				int len = server.getFileLen(path);
 				BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(Proxy.path+path));
 				while (len > 20000) {
 					System.err.println("len is: "+len+" start is: "+start);
@@ -63,6 +63,7 @@ class Proxy{
 				}
 				output.flush();
 				output.close();
+				//init version
 			}catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -82,17 +83,21 @@ class Proxy{
 				String hello = server.sayHello();
 				System.err.println("Server said " + hello);
 				int server_version = server.getVersion(path);
+				if(server_version == -1) return -1; // file not found on server
+				System.err.println("Server version " + server_version);
 				if(!proxy_version.containsKey(path)) {
 					//get whole file
+					System.err.println("Clietn version null ");
 					System.err.println("need to get whole file");
-					handle_getFile(path);
-					return 0;
+					if(!handle_getFile(path)) return -1; // fail to get file
+					proxy_version.put(path, server_version); // update version
 				} 
+				System.err.println("Clietn version " + proxy_version.get(path));
 				int local_version = proxy_version.get(path);
-				if(server_version == -1) return -1; // file not found on server
 				if(server_version > local_version) {System.err.println("server have new version");} //TODO get file
 				if(server_version == local_version) {System.err.println("same version"); return 1;} //TODO just read local file
 				if(server_version < local_version) {System.err.println("client have new version"); return 2;} //TODO maybe push to server
+				return 0;
 			}
 			catch(RemoteException e) {
 				System.err.println(e); //probably want to do some better logging here.
@@ -114,22 +119,22 @@ class Proxy{
 
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path: " + Proxy.path + path);
-			compareVersion(path);
+			//compareVersion(path);
+			switch(compareVersion(path)) { // for errno
+				case -1:
+					//not on server
+					return Errors.ENOENT;
+				case 0:
+					//get file
+					break;
+				case 1:
+					//same file
+					break;
+				case 2:
+					//client newer
+					break;
+			}
 			int fd = process(path);
-			//switch(compareVersion(path)) {
-			//	case -1:
-			//		//not on server
-			//		break;
-			//	case 0:
-			//		//get file
-			//		break;
-			//	case 1:
-			//		//same file
-			//		break;
-			//	case 2:
-			//		//client newer
-			//		break;
-			//}
 			if(fs[fd].file.isDirectory()) return fd + 2048;
 			try{
 				switch(o) {
