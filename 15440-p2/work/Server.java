@@ -59,10 +59,12 @@ public class Server extends UnicastRemoteObject implements IServer {
 			e.printStackTrace();
 		}
 		return(buffer);
-		//int idx = 0;
-		//while (len > 0) {
-		//	len -=20000;
-		//}
+	}
+
+	public boolean uploadFile(String path, byte[] buffer) {
+		BufferedOutputStream output = new BufferedOutputStream(new FileInputStream(root_path+path));
+		if(!output.write(buffer, 0, buffer.length)) return false;
+		return true;
 	}
 
 	public boolean sendFile(String path) throws RemoteException {
