@@ -79,14 +79,20 @@ class Proxy{
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
+			System.err.println("handle upload called for fd: " + fd);
 			long start = 0;
 			int len = (int)fs[fd].file.length();
+			System.err.println("handle upload file len: " + len);
 			byte buffer[] = new byte[20000000];
 			try {
 				while (len > 20000000) {
 					//byte buffer[20000000];
+					fs[fd].raf.seek(start);
 					int ret = fs[fd].raf.read(buffer, 0, 20000000);
-					server.uploadFile(fs[fd].path, buffer, start);
+					if(ret < 0) {
+						break;
+					}
+					server.uploadFile(fs[fd].path, buffer, start, len);
 					len -= ret;
 					start += ret;
 				}
@@ -94,8 +100,14 @@ class Proxy{
 					//byte buffer[] = new byte[len];
 					//byte buffer[len];
 					//int ret = fs[fd].raf.read(buffer,0, buffer.length);
+					//int ret = fs[fd].raf.read(buffer, 0, len);
+					fs[fd].raf.seek(start);
 					int ret = fs[fd].raf.read(buffer, 0, len);
-					server.uploadFile(fs[fd].path, buffer, start);
+					System.err.println("handle upload read ret: " + ret);
+					if(ret < 0) {
+						break;
+					}
+					server.uploadFile(fs[fd].path, buffer, start, len);
 					len -= ret;
 					start += ret;
 				}
@@ -127,8 +139,9 @@ class Proxy{
 					//get whole file
 					System.err.println("Clietn version null ");
 					System.err.println("need to get whole file");
-					if(!handle_getFile(path)) return -1; // fail to get file
+					if(!handle_getFile(path)) System.err.println("get file fail"); // fail to get file
 					proxy_version.put(path, server_version); // update version
+					return 0;
 				} 
 				System.err.println("Clietn version " + proxy_version.get(path));
 				int local_version = proxy_version.get(path);
@@ -151,17 +164,19 @@ class Proxy{
 				fd++;
 			}
 			fs[fd] = new FILES();
-			fs[fd].path = Proxy.path+path;
-			fs[fd].file = new File(fs[fd].path);
+			fs[fd].path = path;
+			fs[fd].file = new File(Proxy.path+fs[fd].path);
 			return fd;
 		}
 
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path: " + Proxy.path + path);
+			int fd = process(path);
 			//compareVersion(path);
 			switch(compareVersion(path)) { // for errno
 				case -1:
 					//not on server
+					System.err.println("not on server");
 					return Errors.ENOENT;
 				case 0:
 					//get file
@@ -173,7 +188,6 @@ class Proxy{
 					//client newer
 					break;
 			}
-			int fd = process(path);
 			if(fs[fd].file.isDirectory()) return fd + 2048;
 			try{
 				switch(o) {
@@ -223,6 +237,12 @@ class Proxy{
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
+			//byte[] buf = new byte[100];
+			//try{
+			//	System.err.println("close read test ret: "+fs[fd].raf.read(buf));
+			//}catch(Exception e) {
+			//}
+			if(!handle_uploadFile(fd)) System.err.println("fail to upload"); // upload Fail
 			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("close err"); return Errors.EBADF;}
 			if(fs[fd] == null) System.err.println("null fs");
 			if(fs[fd].raf == null) System.err.println("null raf");
@@ -266,6 +286,7 @@ class Proxy{
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
 				int ret = fs[fd].raf.read(buf);
+				System.err.println("read ret: "+ret);
 				if(ret == -1) {
 					return 0; // EOF
 				}

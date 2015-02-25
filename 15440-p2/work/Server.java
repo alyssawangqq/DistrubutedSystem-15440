@@ -87,13 +87,17 @@ public class Server extends UnicastRemoteObject implements IServer {
 	//	return true;
 	//}
 
-	public boolean uploadFile(String path, byte[] buffer, long pos) {
+	public boolean uploadFile(String path, byte[] buffer, long pos, int len) {
 		//BufferedOutputStream output = bos.get(path);
 		try {
-			File file = new File(path);
+			String abs_path = root_path + path;
+			System.err.println("uploadFile Path: " + abs_path);
+			System.err.println("uploadFile pos: " + pos);
+			System.err.println("uploadFile len: " + len);
+			File file = new File(abs_path);
 			RandomAccessFile raf = new RandomAccessFile(file, "rw");
 			raf.seek(pos);
-			raf.write(buffer);
+			raf.write(buffer, 0, len);
 			raf.close();
 			//if(!output.write(buffer, 0, buffer.length)) return false;
 		}catch (Exception e) {

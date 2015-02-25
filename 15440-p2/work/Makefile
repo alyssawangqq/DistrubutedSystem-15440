@@ -19,4 +19,7 @@ test_small:
 test_fuck:
 	cat /tmp/small | LD_PRELOAD=../lib/lib440lib.so ../tools/440write giant
 test_cache:
+	rm Cache/foo
 	LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo
+test_upload:
+	cat changedata | LD_PRELOAD=../lib/lib440lib.so ../tools/440write foo
