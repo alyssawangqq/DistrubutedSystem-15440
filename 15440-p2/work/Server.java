@@ -11,8 +11,11 @@ import java.util.Hashtable;
 //You should investigate when to use UnicastRemoteObject vs Serializable. This is really important!
 public class Server extends UnicastRemoteObject implements IServer {
 	Hashtable<String, Integer> server_version = new Hashtable<String, Integer>();
+	//Hashtable<String, BufferedOutputStream> bos = new Hashtable<String, BufferedOutputStream>();
 	public static String root_path;
+
 	public Server() throws RemoteException {}
+
 	public String sayHello() throws RemoteException{
 		return "Hello :)";
 	}
@@ -61,9 +64,42 @@ public class Server extends UnicastRemoteObject implements IServer {
 		return(buffer);
 	}
 
-	public boolean uploadFile(String path, byte[] buffer) {
-		BufferedOutputStream output = new BufferedOutputStream(new FileInputStream(root_path+path));
-		if(!output.write(buffer, 0, buffer.length)) return false;
+	//public boolean openStream(String path) { // opened when trying to write TODO should check if using //TODO maybe use later
+	//	try{
+	//		BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(root_path+path));
+	//		bos.put(path, output);
+	//	}catch(Exception e) {
+	//		e.printStackTrace();
+	//		return false;
+	//	}
+	//	return true;
+	//}
+
+	//public boolean closeStream(String path) {
+	//	try{
+	//		bos.get(path).flush();
+	//		bos.get(path).close();
+	//		bos.remove(path);
+	//	}catch(Exception e) {
+	//		e.printStackTrace();
+	//		return false;
+	//	}
+	//	return true;
+	//}
+
+	public boolean uploadFile(String path, byte[] buffer, long pos) {
+		//BufferedOutputStream output = bos.get(path);
+		try {
+			File file = new File(path);
+			RandomAccessFile raf = new RandomAccessFile(file, "rw");
+			raf.seek(pos);
+			raf.write(buffer);
+			raf.close();
+			//if(!output.write(buffer, 0, buffer.length)) return false;
+		}catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 		return true;
 	}
 

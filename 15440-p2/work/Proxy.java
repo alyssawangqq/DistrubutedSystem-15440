@@ -75,21 +75,37 @@ class Proxy{
 
 		public boolean handle_uploadFile(int fd) {
 			//BufferedInputStream input = new BufferedInputStream(new FileInputStream(Proxy.path+path));
-			server.openStream(fs[fd].path);
+			//server.openStream(fs[fd].path);
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
-			int len = (int)fs[fd].file.length;
-			int start = 0;
-			while (len > 2000000) {
+			long start = 0;
+			int len = (int)fs[fd].file.length();
+			byte buffer[] = new byte[20000000];
+			try {
+				while (len > 20000000) {
+					//byte buffer[20000000];
+					int ret = fs[fd].raf.read(buffer, 0, 20000000);
+					server.uploadFile(fs[fd].path, buffer, start);
+					len -= ret;
+					start += ret;
+				}
+				while (len > 0) {
+					//byte buffer[] = new byte[len];
+					//byte buffer[len];
+					//int ret = fs[fd].raf.read(buffer,0, buffer.length);
+					int ret = fs[fd].raf.read(buffer, 0, len);
+					server.uploadFile(fs[fd].path, buffer, start);
+					len -= ret;
+					start += ret;
+				}
+			}catch (Exception e) {
+				e.printStackTrace();
+				return false;
 			}
-			while (len > 0) {
-				byte buffer[] = new buffer[len];
-				int ret = fs[fd].raf.read(buffer);
-				server.upLoadFile(fs[fd].path, buffer);
-				len -= ret;
-			}
+			//server.closeStream(fs[fd].path);
 			//byte buffer[] = new buffer[(int)fs[fd].file.length];
+			return true; //TODO false
 		}
 
 		public int compareVersion(String path) {
