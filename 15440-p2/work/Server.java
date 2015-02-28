@@ -104,6 +104,7 @@ public class Server extends UnicastRemoteObject implements IServer {
 			e.printStackTrace();
 			return false;
 		}
+		//bos.put(path,bos.get(path)+1);
 		return true;
 	}
 
