@@ -28,15 +28,10 @@ public class Server extends UnicastRemoteObject implements IServer {
 	}
 
 	public int getFileLen(String path) throws RemoteException{
-		File file = new File(root_path+path); // TODO can be non exits?
+		File file = new File(root_path+path);// not exist return -1
+		if(!file.exists()) return -1;
 		System.err.println(root_path+path);
 		return (int)file.length();
-		//try {
-		//	BufferedInputStream fis = new BufferedInputStream(new FileInputStream(path));
-		//}catch (Exception e) {
-		//	e.printStackTrace();
-		//}
-		//return fis.available();
 	}
 
 	public byte[] downloadFile(String path, long n, int len) {
@@ -64,33 +59,10 @@ public class Server extends UnicastRemoteObject implements IServer {
 		return(buffer);
 	}
 
-	//public boolean openStream(String path) { // opened when trying to write TODO should check if using //TODO maybe use later
-	//	try{
-	//		BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(root_path+path));
-	//		bos.put(path, output);
-	//	}catch(Exception e) {
-	//		e.printStackTrace();
-	//		return false;
-	//	}
-	//	return true;
-	//}
-
-	//public boolean closeStream(String path) {
-	//	try{
-	//		bos.get(path).flush();
-	//		bos.get(path).close();
-	//		bos.remove(path);
-	//	}catch(Exception e) {
-	//		e.printStackTrace();
-	//		return false;
-	//	}
-	//	return true;
-	//}
-
 	public boolean uploadFile(String path, byte[] buffer, long pos, int len) {
 		//BufferedOutputStream output = bos.get(path);
+		String abs_path = root_path + path;
 		try {
-			String abs_path = root_path + path;
 			System.err.println("uploadFile Path: " + abs_path);
 			System.err.println("uploadFile pos: " + pos);
 			System.err.println("uploadFile len: " + len);
@@ -105,21 +77,26 @@ public class Server extends UnicastRemoteObject implements IServer {
 			return false;
 		}
 		//bos.put(path,bos.get(path)+1);
+		server_version.put(abs_path, server_version.get(abs_path)+1);
 		return true;
 	}
 
-	public boolean sendFile(String path) throws RemoteException {
-		return false;
-	}
-
-	public boolean recvFile() throws RemoteException {
-		return false;
+	public boolean rmFile(String path) throws RemoteException{
+		String abs_path = root_path + path;
+		System.err.println("Server: called rm file" + abs_path);
+		try{
+			File file = new File(abs_path);
+			if(!file.delete()) return false;
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		return true;
 	}
 
 	public static void main(String [] args) {
 		if(args.length < 2) return;
 		int port = Integer.parseInt(args[0]);
-		root_path = args[1];
+		root_path = args[1] + "/";
 
 		try {
 			//create the RMI registry if it doesn't exist.

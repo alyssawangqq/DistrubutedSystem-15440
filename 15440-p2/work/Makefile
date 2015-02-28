@@ -19,7 +19,16 @@ test_small:
 test_fuck:
 	cat /tmp/small | LD_PRELOAD=../lib/lib440lib.so ../tools/440write giant
 test_cache:
-	rm Cache/foo
+	rm -f Cache/*
+	rm -f /tmp/cache/*
 	LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo
 test_upload:
-	cat changedata | LD_PRELOAD=../lib/lib440lib.so ../tools/440write foo
+	date | LD_PRELOAD=../lib/lib440lib.so ../tools/440write foo
+proxy1:
+	export proxyport15440=12345;java Proxy 127.0.0.1 11122 /tmp/cache 100000
+proxy2:
+	java Proxy 127.0.0.1 11122 /tmp/cache2 100000
+test_proxy1:
+	export proxyport15440=12345; LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo
+test_proxy2:
+	LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo

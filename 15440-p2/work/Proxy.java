@@ -10,9 +10,11 @@ import java.rmi.registry.LocateRegistry;
 class FILES{
 	String path;
 	File file;
+	boolean modified;
 	RandomAccessFile raf;
 	FILES() {
 		path = null;
+		modified = false;
 		file = null;
 		raf = null;
 	}
@@ -23,11 +25,11 @@ class Proxy{
 	public static int cache_size;
 	public static String server_addr;
 	public static String path;
+	public static IServer server = null;
 	public static Hashtable<String, Integer> proxy_version = new Hashtable<String, Integer>();
 
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
-		IServer server = null;
 
 		public static IServer getServerInstance(String ip, int port){
 			String url = String.format("//%s:%d/ServerService", ip, port);
@@ -48,6 +50,7 @@ class Proxy{
 			long start = 0;
 			try {
 				int len = server.getFileLen(path);
+				if(len < 0) return false; // file not exists
 				BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(Proxy.path+path));
 				while (len > 20000000) { // memory limit
 					System.err.println("len is: "+len+" start is: "+start);
@@ -74,8 +77,6 @@ class Proxy{
 		}
 
 		public boolean handle_uploadFile(int fd) {
-			//BufferedInputStream input = new BufferedInputStream(new FileInputStream(Proxy.path+path));
-			//server.openStream(fs[fd].path);
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
@@ -97,10 +98,6 @@ class Proxy{
 					start += ret;
 				}
 				while (len > 0) {
-					//byte buffer[] = new byte[len];
-					//byte buffer[len];
-					//int ret = fs[fd].raf.read(buffer,0, buffer.length);
-					//int ret = fs[fd].raf.read(buffer, 0, len);
 					fs[fd].raf.seek(start);
 					int ret = fs[fd].raf.read(buffer, 0, len);
 					System.err.println("handle upload read ret: " + ret);
@@ -108,6 +105,7 @@ class Proxy{
 						break;
 					}
 					server.uploadFile(fs[fd].path, buffer, start, len);
+					System.err.println(fs[fd].path);
 					len -= ret;
 					start += ret;
 				}
@@ -115,9 +113,16 @@ class Proxy{
 				e.printStackTrace();
 				return false;
 			}
-			//server.closeStream(fs[fd].path);
-			//byte buffer[] = new buffer[(int)fs[fd].file.length];
 			return true; //TODO false
+		}
+
+		public boolean handle_rmFile(String path) {
+			try {
+				if(!server.rmFile(path)) return false;
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+			return true;
 		}
 
 		public int compareVersion(String path) {
@@ -140,7 +145,8 @@ class Proxy{
 					System.err.println("Clietn version null ");
 					System.err.println("need to get whole file");
 					if(!handle_getFile(path)) System.err.println("get file fail"); // fail to get file
-					proxy_version.put(path, server_version); // update version
+					else 
+						proxy_version.put(path, server_version); // update version
 					return 0;
 				} 
 				System.err.println("Clietn version " + proxy_version.get(path));
@@ -173,18 +179,22 @@ class Proxy{
 			System.err.println("open called for path: " + Proxy.path + path);
 			int fd = process(path);
 			//compareVersion(path);
-			switch(compareVersion(path)) { // for errno
+			int compareVRet = compareVersion(path);
+			switch(compareVRet) { // for errno
 				case -1:
 					//not on server
 					System.err.println("not on server");
 					return Errors.ENOENT;
 				case 0:
+					if(!handle_getFile(path)) System.err.println("get file fail");
 					//get file
 					break;
 				case 1:
 					//same file
 					break;
 				case 2:
+					//if(!handle_uploadFile(path)) System.err.println("upload file fail");
+					//should not be happen
 					//client newer
 					break;
 			}
@@ -198,19 +208,20 @@ class Proxy{
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
-						if(fs[fd].file.exists()) return Errors.EEXIST; 
+						//TODO create file on server
+						if(fs[fd].file.exists() || compareVRet != -1) return Errors.EEXIST; 
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case READ:
 						System.err.println("READ");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
-						if(!fs[fd].file.exists()) return Errors.ENOENT;
+						if(!fs[fd].file.exists() || compareVRet == -1) return Errors.ENOENT;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
 						break;
 					case WRITE:
 						System.err.println("WRITE");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
-						if(!fs[fd].file.exists()) return Errors.ENOENT;
+						if(!fs[fd].file.exists() || compareVRet == -1) return Errors.ENOENT;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 				}			
@@ -242,7 +253,12 @@ class Proxy{
 			//	System.err.println("close read test ret: "+fs[fd].raf.read(buf));
 			//}catch(Exception e) {
 			//}
-			if(!handle_uploadFile(fd)) System.err.println("fail to upload"); // upload Fail
+			//if(fs[fd].modified && !handle_uploadFile(fd)) System.err.println("fail to upload"); // upload Fail
+			if(fs[fd].modified) {
+				if(!handle_uploadFile(fd)) System.err.println("fail to upload");
+				else
+					proxy_version.put(fs[fd].path, proxy_version.get(fs[fd].path) + 1);
+			}
 			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("close err"); return Errors.EBADF;}
 			if(fs[fd] == null) System.err.println("null fs");
 			if(fs[fd].raf == null) System.err.println("null raf");
@@ -274,6 +290,7 @@ class Proxy{
 				System.err.println("write exception");
 				return Errors.EBADF;
 			}
+			fs[fd].modified = true; // modified
 			return buf.length;
 		}
 
@@ -333,9 +350,8 @@ class Proxy{
 				File file = new File(Proxy.path+path);
 				if(!file.exists())  return Errors.ENOENT;
 				if(file.isDirectory()) return Errors.EISDIR;
-				if(!file.delete()) {
-					return -1;
-				}
+				if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
+				if(!handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
 			}catch(Exception e) {
 				System.err.println("unlink exception");
 				e.printStackTrace();
@@ -362,7 +378,7 @@ class Proxy{
 		if(args.length < 4) return;
 		Proxy.server_addr = args[0];
 		Proxy.port = Integer.parseInt(args[1]);
-		Proxy.path = args[2];
+		Proxy.path = args[2] + "/";
 		Proxy.cache_size = Integer.parseInt(args[3]);
 		//(new Thread(new RPCreceiver(new FileHandlingFactory()))).start();
 		(new RPCreceiver(new FileHandlingFactory())).run();
