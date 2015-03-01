@@ -30,7 +30,7 @@ public class Server extends UnicastRemoteObject implements IServer {
 	public int getFileLen(String path) throws RemoteException{
 		File file = new File(root_path+path);// not exist return -1
 		if(!file.exists()) return -1;
-		System.err.println(root_path+path);
+		System.err.println("getFileLen called for " + root_path+path);
 		return (int)file.length();
 	}
 

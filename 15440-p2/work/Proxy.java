@@ -144,22 +144,26 @@ class Proxy{
 					//get whole file
 					System.err.println("Clietn version null ");
 					System.err.println("need to get whole file");
-					if(!handle_getFile(path)) System.err.println("get file fail"); // fail to get file
-					else 
-						proxy_version.put(path, server_version); // update version
-					return 0;
+					if(!handle_getFile(path)) return -2; // fail to get file
+					proxy_version.put(path, server_version); // update version
+					return 3;
 				} 
 				System.err.println("Clietn version " + proxy_version.get(path));
 				int local_version = proxy_version.get(path);
-				if(server_version > local_version) {System.err.println("server have new version"); return 0;} //TODO get file
+				if(server_version > local_version) {System.err.println("server have new version"); 
+					if(!handle_getFile(path)) return -1;
+					return 0;
+				} //get file
 				if(server_version == local_version) {System.err.println("same version"); return 1;} //TODO just read local file
-				if(server_version < local_version) {System.err.println("client have new version"); return 2;} //TODO maybe push to server
-				return 0;
+				if(server_version < local_version) {System.err.println("client have new version"); 
+					return 2;
+				} //TODO maybe push to server
+				return 3;
 			}
 			catch(RemoteException e) {
 				System.err.println(e); //probably want to do some better logging here.
 			}
-			return 0;
+			return 3;
 		}
 
 		public synchronized int process (String path) {
@@ -178,15 +182,17 @@ class Proxy{
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path: " + Proxy.path + path);
 			int fd = process(path);
-			//compareVersion(path);
 			int compareVRet = compareVersion(path);
 			switch(compareVRet) { // for errno
+				case -2:
+					//get file fail
+					break;
 				case -1:
 					//not on server
 					System.err.println("not on server");
 					return Errors.ENOENT;
 				case 0:
-					if(!handle_getFile(path)) System.err.println("get file fail");
+					//if(!handle_getFile(path)) System.err.println("get file fail");
 					//get file
 					break;
 				case 1:
@@ -196,6 +202,9 @@ class Proxy{
 					//if(!handle_uploadFile(path)) System.err.println("upload file fail");
 					//should not be happen
 					//client newer
+					break;
+				case 3:
+					//success
 					break;
 			}
 			if(fs[fd].file.isDirectory()) return fd + 2048;
@@ -298,7 +307,6 @@ class Proxy{
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
-			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("read err"); return Errors.EBADF;}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
 				int ret = fs[fd].raf.read(buf);
@@ -312,7 +320,6 @@ class Proxy{
 				System.err.println("read exception");
 				return Errors.EBADF;
 			}
-			//return 0;
 		}
 
 		public synchronized long lseek( int fd, long pos, LseekOption o ) {

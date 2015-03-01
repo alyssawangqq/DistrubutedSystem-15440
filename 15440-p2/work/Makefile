@@ -32,3 +32,6 @@ test_proxy1:
 	export proxyport15440=12345; LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo
 test_proxy2:
 	LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo
+test_huge:
+	rm -f /tmp/cache/huge
+	export proxyport15440=12345; LD_PRELOAD=../lib/lib440lib.so ../tools/440read hugefile
