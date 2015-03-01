@@ -90,6 +90,7 @@ public class Server extends UnicastRemoteObject implements IServer {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
+		server_version.remove(abs_path);
 		return true;
 	}
 

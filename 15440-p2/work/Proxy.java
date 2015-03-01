@@ -352,6 +352,7 @@ class Proxy{
 				if(file.isDirectory()) return Errors.EISDIR;
 				if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
 				if(!handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
+				proxy_version.remove(path);
 			}catch(Exception e) {
 				System.err.println("unlink exception");
 				e.printStackTrace();
