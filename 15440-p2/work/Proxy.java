@@ -255,9 +255,8 @@ class Proxy{
 			//}
 			//if(fs[fd].modified && !handle_uploadFile(fd)) System.err.println("fail to upload"); // upload Fail
 			if(fs[fd].modified) {
-				if(!handle_uploadFile(fd)) System.err.println("fail to upload");
-				else
-					proxy_version.put(fs[fd].path, proxy_version.get(fs[fd].path) + 1);
+				if(!handle_uploadFile(fd)) return -1;
+				proxy_version.put(fs[fd].path, proxy_version.get(fs[fd].path) + 1);
 			}
 			//if(fd < 0 || fs[fd] == null || fs[fd].raf == null || fs[fd].file == null) {System.err.println("close err"); return Errors.EBADF;}
 			if(fs[fd] == null) System.err.println("null fs");
