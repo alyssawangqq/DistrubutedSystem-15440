@@ -190,7 +190,7 @@ class Proxy{
 				case -1:
 					//not on server
 					System.err.println("not on server");
-					return Errors.ENOENT;
+					//return Errors.ENOENT;
 				case 0:
 					//if(!handle_getFile(path)) System.err.println("get file fail");
 					//get file
