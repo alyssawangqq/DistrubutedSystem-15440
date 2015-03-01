@@ -77,7 +77,9 @@ public class Server extends UnicastRemoteObject implements IServer {
 			return false;
 		}
 		//bos.put(path,bos.get(path)+1);
-		server_version.put(abs_path, server_version.get(abs_path)+1);
+		if(server_version.get(abs_path) == null) server_version.put(abs_path, 0);
+		else
+			server_version.put(abs_path, server_version.get(abs_path)+1);
 		return true;
 	}
 

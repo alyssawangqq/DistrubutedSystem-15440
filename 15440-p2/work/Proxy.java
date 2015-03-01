@@ -212,14 +212,15 @@ class Proxy{
 				switch(o) {
 					case CREATE:
 						System.err.println("CREATE");
+						if(compareVRet == -1) proxy_version.put(path, 0); //not on server and create
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
-						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						//TODO create file on server
 						if(fs[fd].file.exists() || compareVRet != -1) return Errors.EEXIST; 
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						if(compareVRet == -1) proxy_version.put(path, 0); //not on server and create
 						break;
 					case READ:
 						System.err.println("READ");
