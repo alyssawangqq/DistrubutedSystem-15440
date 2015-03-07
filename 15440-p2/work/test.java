@@ -1,9 +1,26 @@
 import java.io.*;
 public class test{
 
+	public static int num = 100;
 	public static void main (String[] args) {
 		//System.err.println(method(args[0]));
-		System.err.println(args[0]);
+		//System.err.println(args[0]);
+		//testArr();
+		num = decr(num);
+		num = decr(num);
+		System.err.println(num);
+	}
+
+	public static void testArr() {
+		String[] a = new String[10000];
+		System.err.println(a.length);
+		a[a.length] = "a";
+		System.err.println(a.length);
+	}
+
+	public static int decr(int i) {
+		i -= 10;
+		return i;
 	}
 
 	public static int method(String s) {
@@ -19,13 +36,13 @@ public class test{
 			//			return -3;
 			//	}
 			//}
-			BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(s));
-			byte[] b = "haha";
-			output.write(b,0,b.length);
-			output.write(b,0,b.length);
-			output.write(b,0,b.length);
-			output.flush();
-			output.close();
+			//BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(s));
+			//byte[] b = "haha";
+			//output.write(b,0,b.length);
+			//output.write(b,0,b.length);
+			//output.write(b,0,b.length);
+			//output.flush();
+			//output.close();
 		}
 		catch(Exception e) {
 			e.printStackTrace();
