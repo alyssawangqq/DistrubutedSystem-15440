@@ -25,7 +25,7 @@ test_cache:
 test_upload:
 	date | LD_PRELOAD=../lib/lib440lib.so ../tools/440write foo
 proxy1:
-	export proxyport15440=12345;java Proxy 127.0.0.1 11122 /tmp/cache 100000
+	export proxyport15440=12345;java Proxy 127.0.0.1 11122 /tmp/cache 60
 proxy2:
 	java Proxy 127.0.0.1 11122 /tmp/cache2 100000
 test_proxy1:

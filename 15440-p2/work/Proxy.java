@@ -192,8 +192,8 @@ class Proxy{
 			//get server & check version
 			int len = 0;
 			try{
-				len = server.getFileLen(path);
 				server = getServerInstance(server_addr, port);
+				len = server.getFileLen(path);
 			}
 			catch(Exception e) {
 				e.printStackTrace(); //you should actually handle exceptions properly
@@ -209,24 +209,51 @@ class Proxy{
 					//get whole file
 					System.err.println("Clietn version null ");
 					System.err.println("need to get whole file");
-					if(!handle_getFile(path)) return -2; // fail to get file
-					//proxy_version.put(path, server_version); // update version // change to class
-					cache.append(path);
-					VersionList node = new VersionList(server_version, cache.back());
-					proxy_version.put(path, node);
-					return 3;
+					if(remain_size > len) {
+						if(!handle_getFile(path)) return -2; // fail to get file
+						remain_size -= len;
+						//proxy_version.put(path, server_version); // update version // change to class
+						cache.append(path);
+						VersionList node = new VersionList(server_version, cache.back());
+						proxy_version.put(path, node);
+						return 3;
+					}else {
+						System.err.println("do LRU");
+						while(remain_size < len && !cache.empty()) {
+							File tmp = new File(Proxy.path + cache.front().data);
+							remain_size += tmp.length();
+							System.err.println("remain_size: " + remain_size);
+							System.err.println("cache front: " + cache.front().data);
+							System.err.println("cache back: " + cache.back().data);
+							unlink(cache.front().data);
+							cache.front().remove();
+						}
+						if(remain_size < len) {
+							//TODO file too big
+							System.err.println("FILE TOO BIG");
+						}else {
+							if(!handle_getFile(path)) return -1;
+							cache.append(path);
+							VersionList node = new VersionList(server_version, cache.back());
+							proxy_version.put(path, node);
+							//proxy_version.get(path).version = server_version;
+							//proxy_version.get(path).node = cache.back();
+							remain_size -= len;
+						}
+					}
 				} 
-				System.err.println("Clietn version " + proxy_version.get(path).version);
+
+				//System.err.println("Clietn version " + proxy_version.get(path).version);
 				int local_version = proxy_version.get(path).version;
 				if(server_version > local_version) {
-					File orig = new File(path);
+					File orig = new File(Proxy.path + path);
 					remain_size += orig.length();
 					unlink(path);
 					proxy_version.get(path).node.remove();
 					//remove origin file first
 					System.err.println("server have new version"); 
 					while(remain_size < len && !cache.empty()) {
-						File tmp = new File(cache.front().data);
+						File tmp = new File(Proxy.path + cache.front().data);
 						remain_size += tmp.length();
 						unlink(cache.front().data);
 						cache.front().remove();
@@ -239,6 +266,7 @@ class Proxy{
 						cache.append(path);
 						proxy_version.get(path).version = server_version;
 						proxy_version.get(path).node = cache.back();
+						remain_size -= len;
 					}
 					return 0;
 				} //get file
