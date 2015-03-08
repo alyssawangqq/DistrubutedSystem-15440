@@ -112,8 +112,6 @@ class Proxy{
 			try {
 				int len = server.getFileLen(path); // get file length
 				if(len < 0) return false; // file not exists
-				if(len > cache_size) return false; // not enough mem TODO
-				//if((remain_size -= len) < 0) return false; //e.g. return LRU(); //TODO
 				BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(Proxy.path+path));
 				while (len > 20000000) { // memory limit
 					System.err.println("len is: "+len+" start is: "+start);
@@ -198,6 +196,7 @@ class Proxy{
 			catch(Exception e) {
 				e.printStackTrace(); //you should actually handle exceptions properly
 			}
+			if(len > cache_size) return -3;
 			if(server == null) System.exit(1); //You should handle errors properly.
 			try {
 				String hello = server.sayHello();
@@ -231,6 +230,7 @@ class Proxy{
 						if(remain_size < len) {
 							//TODO file too big
 							System.err.println("FILE TOO BIG");
+							return -3;
 						}else {
 							if(!handle_getFile(path)) return -1;
 							cache.append(path);
@@ -303,18 +303,11 @@ class Proxy{
 
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path: " + Proxy.path + path);
-			//try{
-			//	int len = server.getFileLen(path);
-			//}catch(Exception e) {
-			//	e.printStackTrace();
-			//}
-			//VersionList v = cache.get(path);
-			//1. v exist hit
-			//2. v null miss
-
 			int fd = process(path);
 			int compareVRet = compareVersion(path); // if miss && full, cached file should be delete before get file, remain_size should be add TODO
 			switch(compareVRet) { // for errno
+				case -3:
+					return Errors.ENOMEM;
 				case -2:
 					//get file fail
 					break;
