@@ -1,6 +1,7 @@
 /* Sample skeleton for proxy */ 
 import java.io.*;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
@@ -106,10 +107,10 @@ class Proxy{
 			return null;
 		}
 
-		public boolean handle_getFile(String path) {
+		public boolean handle_getFile(String path, int len) {
 			long start = 0;
 			try {
-				int len = server.getFileLen(path); // get file length
+				//int len = server.getFileLen(path); // get file length
 				if(len < 0) return false; // file not exists
 				//check if need create dir
 				File tmp = new File(Proxy.path + path);
@@ -212,7 +213,7 @@ class Proxy{
 					System.err.println("Clietn version null ");
 					System.err.println("need to get whole file");
 					if(remain_size > len) {
-						if(!handle_getFile(path)) return -2; // fail to get file
+						if(!handle_getFile(path, len)) return -2; // fail to get file
 						remain_size -= len;
 						//proxy_version.put(path, server_version); // update version // change to class
 						cache.append(path);
@@ -235,7 +236,7 @@ class Proxy{
 							System.err.println("FILE TOO BIG");
 							return -3;
 						}else {
-							if(!handle_getFile(path)) return -1;
+							if(!handle_getFile(path, len)) return -1;
 							cache.append(path);
 							VersionList node = new VersionList(server_version, cache.back());
 							proxy_version.put(path, node);
@@ -265,7 +266,7 @@ class Proxy{
 						//TODO file too big
 						System.err.println("FILE TOO BIG");
 					}else {
-						if(!handle_getFile(path)) return -1;
+						if(!handle_getFile(path, len)) return -1;
 						cache.append(path);
 						proxy_version.get(path).version = server_version;
 						proxy_version.get(path).node = cache.back();
@@ -304,6 +305,25 @@ class Proxy{
 			return fd;
 		}
 
+		public static String simplifyPath(String path) {
+			LinkedList<String> stack = new LinkedList<String>();
+			String[] pathsplit = path.split("/");
+			for(String p : pathsplit) {
+				if( p.equals("..") && !stack.isEmpty() ) {  // stack pop
+					stack.removeLast();
+				} else if(p.length()!=0 && !p.equals(".") && !p.equals("..")) {
+					stack.addLast(p);   // stack push
+				}   // other cases: do nothing
+			}
+			StringBuilder sb = new StringBuilder();
+			if(stack.isEmpty()) return "/"; //!!! corner case
+			for(String p : stack) { // build output
+				sb.append("/");
+				sb.append(p);
+			}
+			return sb.toString();
+		}
+
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path: " + Proxy.path + path);
 			try{
@@ -313,9 +333,9 @@ class Proxy{
 				String c_path = new File(Proxy.path + path).getCanonicalPath();
 				String dir_path = new File(Proxy.path).getCanonicalPath();
 				if(!c_path.contains(dir_path)) return Errors.EPERM;
-				//System.err.println(new File(path).getCanonicalPath());
-				//System.err.println(new File(server.getRootPath()).getParent());
-				path = new File(path).getCanonicalPath().replace(new File(server.getRootPath()).getParent(), "");
+
+				//simpe path
+				path = simplifyPath(path);
 				System.err.println("path is: " + path);
 			}catch(Exception e) {
 				e.printStackTrace();
