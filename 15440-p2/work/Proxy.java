@@ -71,10 +71,12 @@ class LList<T> {
 
 class VersionList{
 	int version;
+	boolean inUse;
 	Node<String> node;
-	VersionList(int v, Node<String> i) {
+	VersionList(int v, Node<String> i, boolean use) {
 		version = v;
 		node = i;
+		inUse = use;
 	}
 }
 
@@ -195,7 +197,6 @@ class Proxy{
 			//get server & check version
 			int len = 0;
 			try{
-				//server = getServerInstance(server_addr, port);
 				len = server.getFileLen(path);
 			}
 			catch(Exception e) {
@@ -204,8 +205,6 @@ class Proxy{
 			if(len > cache_size) return -3;
 			if(server == null) System.exit(1); //You should handle errors properly.
 			try {
-				String hello = server.sayHello();
-				System.err.println("Server said " + hello);
 				int server_version = server.getVersion(path);
 				if(server_version == -1) return -1; // file not found on server
 				System.err.println("Server version " + server_version);
@@ -218,19 +217,21 @@ class Proxy{
 						remain_size -= len;
 						//proxy_version.put(path, server_version); // update version // change to class
 						cache.append(path);
-						VersionList node = new VersionList(server_version, cache.back());
+						VersionList node = new VersionList(server_version, cache.back(), true);
 						proxy_version.put(path, node);
 						return 3;
 					}else {
 						System.err.println("do LRU"); // TODO cannot close file that being opened
 						while(remain_size < len && !cache.empty()) {
-							File tmp = new File(Proxy.path + cache.front().data);
+							Node ptr = cache.front();
+							while(proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
+							File tmp = new File(Proxy.path + ptr.data);
 							remain_size += tmp.length();
 							System.err.println("remain_size: " + remain_size);
-							System.err.println("cache front: " + cache.front().data);
-							System.err.println("cache back: " + cache.back().data);
-							cache_unlink(cache.front().data);
-							cache.front().remove();
+							System.err.println("cache front: " + ptr.data);
+							System.err.println("cache back: " + ptr.data);
+							cache_unlink(ptr.data.toString());
+							ptr.remove();
 						}
 						if(remain_size < len) {
 							//TODO file too big
@@ -239,10 +240,8 @@ class Proxy{
 						}else {
 							if(!handle_getFile(path, len)) return -1;
 							cache.append(path);
-							VersionList node = new VersionList(server_version, cache.back());
+							VersionList node = new VersionList(server_version, cache.back(), true);
 							proxy_version.put(path, node);
-							//proxy_version.get(path).version = server_version;
-							//proxy_version.get(path).node = cache.back();
 							remain_size -= len;
 						}
 					}
@@ -259,10 +258,15 @@ class Proxy{
 					//remove origin file first
 					System.err.println("server have new version"); 
 					while(remain_size < len && !cache.empty()) {
-						File tmp = new File(Proxy.path + cache.front().data);
-						remain_size += tmp.length();
-						cache_unlink(cache.front().data);
-						cache.front().remove();
+							Node ptr = cache.front();
+							while(proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
+							File tmp = new File(Proxy.path + ptr.data);
+							remain_size += tmp.length();
+							System.err.println("remain_size: " + remain_size);
+							System.err.println("cache front: " + ptr.data);
+							System.err.println("cache back: " + ptr.data);
+							cache_unlink(ptr.data.toString());
+							ptr.remove();
 					}
 					if(remain_size < len) {
 						//TODO file too big
@@ -270,7 +274,7 @@ class Proxy{
 					}else {
 						if(!handle_getFile(path, len)) return -1;
 						cache.append(path);
-						VersionList node = new VersionList(server_version, cache.back());
+						VersionList node = new VersionList(server_version, cache.back(), true);
 						proxy_version.put(path, node);
 						//proxy_version.get(path).node = cache.back();
 						remain_size -= len;
@@ -382,7 +386,8 @@ class Proxy{
 						System.err.println("CREATE");
 						if(compareVRet == -1){ 
 							cache.append(fs[fd].path);
-							proxy_version.put(path, new VersionList(0, cache.back())); //not on server and create
+							if(!fs[fd].file.exists()) fs[fd].modified = true;
+							proxy_version.put(path, new VersionList(0, cache.back(), true)); //not on server and create
 						}
 						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
@@ -392,10 +397,11 @@ class Proxy{
 						//TODO create file on server
 						if(fs[fd].file.exists() || compareVRet != -1) return Errors.EEXIST; 
 						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						fs[fd].modified = true;
 						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
 						if(compareVRet == -1){ 
 							cache.append(fs[fd].path);
-							proxy_version.put(path, new VersionList(0, cache.back())); //not on server and create
+							proxy_version.put(path, new VersionList(0, cache.back(), true)); //not on server and create
 						}
 						break;
 					case READ:
@@ -435,18 +441,11 @@ class Proxy{
 			if(fd >= 2048) {
 				fd -= 2048;
 			}
-			//byte[] buf = new byte[100];
-			//try{
-			//	System.err.println("close read test ret: "+fs[fd].raf.read(buf));
-			//}catch(Exception e) {
-			//}
-			//if(fs[fd].modified && !handle_uploadFile(fd)) System.err.println("fail to upload"); // upload Fail
 			if(fs[fd].modified) {
 				if(!handle_uploadFile(fd)) return -1;
 				fs[fd].modified = false;
 				if(fs[fd].file.exists()) fs[fd].file.delete();
 				fs_private[fd].file.renameTo(fs[fd].file);
-				//proxy_version.put(fs[fd].path, new VersionList(proxy_version.get(fs[fd].path).version + 1, cache. /*node*/));
 				proxy_version.get(fs[fd].path).version += 1;
 			}
 			if(fs[fd] == null) System.err.println("null fs");
@@ -454,11 +453,14 @@ class Proxy{
 			if(fs[fd].file == null) System.err.println("file null");
 			try{
 				if(fs[fd].raf != null) fs[fd].raf.close();
+				//clean inUse
+				proxy_version.get(fs[fd].path).inUse = false; //its a must
+				//clean public
 				fs[fd].raf = null;
 				fs[fd].file = null;
 				fs[fd].path = null;
 				fs[fd] = null;
-
+				//clean private
 				fs_private[fd].raf = null;
 				fs_private[fd].file = null;
 				fs_private[fd].path = null;
@@ -518,17 +520,29 @@ class Proxy{
 					case FROM_CURRENT:
 						System.err.println("From current +: " + pos);
 						if(fs[fd].raf != null) fs[fd].raf.seek(fs[fd].raf.getFilePointer() + pos);
+						else 
+							System.err.println("fs raf is null");
 						if(fs_private[fd].raf != null) fs_private[fd].raf.seek(fs_private[fd].raf.getFilePointer() + pos);
+						else 
+							System.err.println("fs_private raf is null");
 						break;
 					case FROM_END:
 						System.err.println("length is: " +fs[fd].raf.length() + "From end +: " + pos);
 						if(fs[fd].raf != null) fs[fd].raf.seek(fs[fd].raf.length() - pos);
+						else 
+							System.err.println("fs raf is null");
 						if(fs_private[fd].raf != null) fs_private[fd].raf.seek(fs_private[fd].raf.length() - pos);
+						else 
+							System.err.println("fs_private raf is null");
 						break;
 					case FROM_START:
-						System.err.println("From end +: " + pos);
+						System.err.println("From start +: " + pos);
 						if(fs[fd].raf != null) fs[fd].raf.seek(pos);
+						else 
+							System.err.println("fs raf is null");
 						if(fs_private[fd].raf != null) fs_private[fd].raf.seek(pos);
+						else 
+							System.err.println("fs_private raf is null");
 						break;
 				}
 			}catch(IOException e) {
@@ -574,7 +588,7 @@ class Proxy{
 
 		public void clientdone() {
 			System.err.println("client done called");
-			close_all();
+			//close_all();
 			return;
 		}
 	}
