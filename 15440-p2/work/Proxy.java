@@ -94,6 +94,7 @@ class Proxy{
 	public static FILES[] fs_private = new FILES[1000];
 
 	private static class FileHandler implements FileHandling {
+		int local_version=0;
 
 		public static IServer getServerInstance(String ip, int port){
 			String url = String.format("//%s:%d/ServerService", ip, port);
@@ -189,7 +190,7 @@ class Proxy{
 			return true;
 		}
 
-		public int compareVersion(String path) {
+		public synchronized int compareVersion(String path) {
 			//get server & check version
 			int len = 0;
 			try{
@@ -243,7 +244,7 @@ class Proxy{
 					}
 				} 
 
-				int local_version = proxy_version.get(path).version;
+				local_version = proxy_version.get(path).version;
 				System.err.println("Client version " + local_version);
 				if(server_version > local_version) {
 					File orig = new File(Proxy.path + path);
@@ -444,7 +445,8 @@ class Proxy{
 				}
 				fs[fd].modified = false;
 				if(fs[fd].file.exists()) fs[fd].file.delete();
-				proxy_version.get(fs[fd].path).version += 1;
+				//proxy_version.get(fs[fd].path).version += 1; //should remain
+				proxy_version.get(fs[fd].path).version = local_version+1; //should remain
 			}
 			if(fs[fd] == null) System.err.println("null fs");
 			if(fs[fd].raf == null) System.err.println("null raf");
@@ -566,10 +568,12 @@ class Proxy{
 		public synchronized int unlink( String path ) {
 			System.err.println("unlink called for path" + path);
 			try {
+				server = getServerInstance(server_addr, port);
 				File file = new File(Proxy.path+path);
-				if(!file.exists())  return Errors.ENOENT;
+				//if(!file.exists())  return Errors.ENOENT;
 				if(file.isDirectory()) return Errors.EISDIR;
-				if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
+				//if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
+				file.delete();
 				proxy_version.remove(path);
 				if(!handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
 			}catch(Exception e) {
@@ -600,7 +604,7 @@ class Proxy{
 		Proxy.path = args[2] + File.separator;
 		Proxy.cache_size = Integer.parseInt(args[3]);
 		Proxy.remain_size = cache_size;
-		System.err.println("Proxy online with size: " + cache_size);
+		System.err.println("Proxy online with size: " + cache_size + ",port: " + Proxy.port);
 		(new RPCreceiver(new FileHandlingFactory())).run();
 	}
 }

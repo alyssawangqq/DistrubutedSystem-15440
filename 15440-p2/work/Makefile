@@ -38,3 +38,6 @@ test_write:
 	rm -f /tmp/cache/newfile
 	rm -f Serverdir/newfile
 	export proxyport15440=12345; date | LD_PRELOAD=../lib/lib440lib.so ../tools/440write newfile
+test_unlink:
+	export proxyport15440=15440; LD_PRELOAD=../lib/lib440lib.so ../test/unlink file
+	LD_PRELOAD=../lib/lib440lib.so ../test/create file
