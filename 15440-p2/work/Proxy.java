@@ -85,7 +85,6 @@ class Proxy{
 	public static String server_addr;
 	public static String path;
 	public static IServer server = null;
-	public static LRU_imp LRU;
 	public static Hashtable<String, VersionList> proxy_version = new Hashtable<String, VersionList>();
 	public static LList<String> cache = new LList<String>();
 
