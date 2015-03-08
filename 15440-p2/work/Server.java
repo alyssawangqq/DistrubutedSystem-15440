@@ -51,9 +51,9 @@ public class Server extends UnicastRemoteObject implements IServer {
 				return null;
 			}
 			while(len > 0) {
-				System.err.println("off is: "+off+"len is: "+len);
+				//System.err.println("off is: "+off+"len is: "+len);
 				int ret = input.read(buffer, off, len);
-				System.err.println("ret is: "+ret);
+				//System.err.println("ret is: "+ret);
 				off += ret;
 				len -= ret;
 			}
@@ -69,8 +69,8 @@ public class Server extends UnicastRemoteObject implements IServer {
 		String abs_path = root_path + path;
 		try {
 			System.err.println("uploadFile Path: " + abs_path);
-			System.err.println("uploadFile pos: " + pos);
-			System.err.println("uploadFile len: " + len);
+			//System.err.println("uploadFile pos: " + pos);
+			//System.err.println("uploadFile len: " + len);
 			File file = new File(abs_path);
 			RandomAccessFile raf = new RandomAccessFile(file, "rw");
 			raf.seek(pos);

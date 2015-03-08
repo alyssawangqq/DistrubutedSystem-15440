@@ -91,6 +91,7 @@ class Proxy{
 
 	private static class FileHandler implements FileHandling {
 		FILES[] fs = new FILES[1000];
+		FILES[] fs_private = new FILES[1000];
 
 		public static IServer getServerInstance(String ip, int port){
 			String url = String.format("//%s:%d/ServerService", ip, port);
@@ -147,29 +148,29 @@ class Proxy{
 			}
 			System.err.println("handle upload called for fd: " + fd);
 			long start = 0;
-			int len = (int)fs[fd].file.length();
+			int len = (int)fs_private[fd].file.length();
 			System.err.println("handle upload file len: " + len);
 			byte buffer[] = new byte[1000000];
 			try {
 				while (len > 1000000) {
 					//byte buffer[20000000];
-					fs[fd].raf.seek(start);
-					int ret = fs[fd].raf.read(buffer, 0, 1000000);
+					fs_private[fd].raf.seek(start);
+					int ret = fs_private[fd].raf.read(buffer, 0, 1000000);
 					if(ret < 0) {
 						break;
 					}
-					server.uploadFile(fs[fd].path, buffer, start, len);
+					server.uploadFile(fs[fd].path, buffer, start, ret);
 					len -= ret;
 					start += ret;
 				}
 				while (len > 0) {
-					fs[fd].raf.seek(start);
-					int ret = fs[fd].raf.read(buffer, 0, len);
+					fs_private[fd].raf.seek(start);
+					int ret = fs_private[fd].raf.read(buffer, 0, len);
 					System.err.println("handle upload read ret: " + ret);
 					if(ret < 0) {
 						break;
 					}
-					server.uploadFile(fs[fd].path, buffer, start, len);
+					server.uploadFile(fs[fd].path, buffer, start, ret);
 					System.err.println(fs[fd].path);
 					len -= ret;
 					start += ret;
@@ -228,7 +229,7 @@ class Proxy{
 							System.err.println("remain_size: " + remain_size);
 							System.err.println("cache front: " + cache.front().data);
 							System.err.println("cache back: " + cache.back().data);
-							unlink(cache.front().data);
+							cache_unlink(cache.front().data);
 							cache.front().remove();
 						}
 						if(remain_size < len) {
@@ -247,19 +248,19 @@ class Proxy{
 					}
 				} 
 
-				//System.err.println("Clietn version " + proxy_version.get(path).version);
+				System.err.println("Client version " + proxy_version.get(path).version);
 				int local_version = proxy_version.get(path).version;
 				if(server_version > local_version) {
 					File orig = new File(Proxy.path + path);
 					remain_size += orig.length();
-					unlink(path);
 					proxy_version.get(path).node.remove();
+					cache_unlink(path);
 					//remove origin file first
 					System.err.println("server have new version"); 
 					while(remain_size < len && !cache.empty()) {
 						File tmp = new File(Proxy.path + cache.front().data);
 						remain_size += tmp.length();
-						unlink(cache.front().data);
+						cache_unlink(cache.front().data);
 						cache.front().remove();
 					}
 					if(remain_size < len) {
@@ -299,9 +300,14 @@ class Proxy{
 			while(fs[fd] !=null) {
 				fd++;
 			}
+			//public
 			fs[fd] = new FILES();
 			fs[fd].path = path;
 			fs[fd].file = new File(Proxy.path+fs[fd].path);
+			//private
+			fs_private[fd] = new FILES();
+			fs_private[fd].path = path + fd;
+			fs_private[fd].file = new File(Proxy.path+fs_private[fd].path);
 			return fd;
 		}
 
@@ -377,13 +383,15 @@ class Proxy{
 							cache.append(fs[fd].path);
 							proxy_version.put(path, new VersionList(0, cache.back())); //not on server and create
 						}
-						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
 						break;
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
 						//TODO create file on server
 						if(fs[fd].file.exists() || compareVRet != -1) return Errors.EEXIST; 
-						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
 						if(compareVRet == -1){ 
 							cache.append(fs[fd].path);
 							proxy_version.put(path, new VersionList(0, cache.back())); //not on server and create
@@ -399,7 +407,8 @@ class Proxy{
 						System.err.println("WRITE");
 						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						if(!fs[fd].file.exists() || compareVRet == -1) return Errors.ENOENT;
-						fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
+						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
+						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 				}			
 			}catch (FileNotFoundException e) {
@@ -433,6 +442,9 @@ class Proxy{
 			//if(fs[fd].modified && !handle_uploadFile(fd)) System.err.println("fail to upload"); // upload Fail
 			if(fs[fd].modified) {
 				if(!handle_uploadFile(fd)) return -1;
+				fs[fd].modified = false;
+				if(fs[fd].file.exists()) fs[fd].file.delete();
+				fs_private[fd].file.renameTo(fs[fd].file);
 				//proxy_version.put(fs[fd].path, new VersionList(proxy_version.get(fs[fd].path).version + 1, cache. /*node*/));
 				proxy_version.get(fs[fd].path).version += 1;
 			}
@@ -445,6 +457,11 @@ class Proxy{
 				fs[fd].file = null;
 				fs[fd].path = null;
 				fs[fd] = null;
+
+				fs_private[fd].raf = null;
+				fs_private[fd].file = null;
+				fs_private[fd].path = null;
+				fs_private[fd] = null;
 			}catch (IOException e) {
 				e.printStackTrace();
 				return -1;
@@ -459,7 +476,7 @@ class Proxy{
 			}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
-				fs[fd].raf.write(buf);
+				fs_private[fd].raf.write(buf);
 			}catch (IOException e) {
 				e.printStackTrace();
 				System.err.println("write exception");
@@ -489,7 +506,7 @@ class Proxy{
 			}
 		}
 
-		public synchronized long lseek( int fd, long pos, LseekOption o ) {
+		public synchronized long lseek( int fd, long pos, LseekOption o ) { //TODO lseek write, maybe read
 			System.err.println("lseek called for fd" + fd);
 			if(fd >= 2048) {
 				fd -= 2048;
@@ -500,19 +517,37 @@ class Proxy{
 					case FROM_CURRENT:
 						System.err.println("From current +: " + pos);
 						fs[fd].raf.seek(fs[fd].raf.getFilePointer() + pos);
+						fs_private[fd].raf.seek(fs_private[fd].raf.getFilePointer() + pos);
 						break;
 					case FROM_END:
 						System.err.println("length is: " +fs[fd].raf.length() + "From end +: " + pos);
 						fs[fd].raf.seek(fs[fd].raf.length() - pos);
+						fs_private[fd].raf.seek(fs_private[fd].raf.length() - pos);
 						break;
 					case FROM_START:
 						System.err.println("From end +: " + pos);
 						fs[fd].raf.seek(pos);
+						fs_private[fd].raf.seek(pos);
 						break;
 				}
 			}catch(IOException e) {
 				e.printStackTrace();
 				System.err.println("lseek exception");
+				return -1;
+			}
+			return 0;
+		}
+
+		public synchronized int cache_unlink( String path ) {
+			System.err.println("unlink called for path" + path);
+			try {
+				File file = new File(Proxy.path+path);
+				if(!file.exists())  return Errors.ENOENT;
+				if(file.isDirectory()) return Errors.EISDIR;
+				if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
+			}catch(Exception e) {
+				System.err.println("unlink exception");
+				e.printStackTrace();
 				return -1;
 			}
 			return 0;
