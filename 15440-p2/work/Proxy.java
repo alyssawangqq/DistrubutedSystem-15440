@@ -248,10 +248,11 @@ class Proxy{
 					}
 				} 
 
-				System.err.println("Client version " + proxy_version.get(path).version);
 				int local_version = proxy_version.get(path).version;
+				System.err.println("Client version " + local_version);
 				if(server_version > local_version) {
 					File orig = new File(Proxy.path + path);
+					//proxy_version.get(path).version = server_version;
 					remain_size += orig.length();
 					proxy_version.get(path).node.remove();
 					cache_unlink(path);
@@ -269,8 +270,9 @@ class Proxy{
 					}else {
 						if(!handle_getFile(path, len)) return -1;
 						cache.append(path);
-						proxy_version.get(path).version = server_version;
-						proxy_version.get(path).node = cache.back();
+						VersionList node = new VersionList(server_version, cache.back());
+						proxy_version.put(path, node);
+						//proxy_version.get(path).node = cache.back();
 						remain_size -= len;
 					}
 					return 0;
@@ -545,6 +547,7 @@ class Proxy{
 				if(!file.exists())  return Errors.ENOENT;
 				if(file.isDirectory()) return Errors.EISDIR;
 				if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
+				proxy_version.remove(path);
 			}catch(Exception e) {
 				System.err.println("unlink exception");
 				e.printStackTrace();
