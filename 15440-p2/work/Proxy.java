@@ -183,12 +183,10 @@ class Proxy{
 
 		public int handle_rmFile(String path) {
 			try {
-				//if(server.rmFile(path)) return false;
 				return server.rmFile(path);
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
-			return true;
 		}
 
 		public synchronized int compareVersion(String path) {
@@ -567,7 +565,8 @@ class Proxy{
 				//if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
 				file.delete();
 				proxy_version.remove(path);
-				if(!handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
+				//if(handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
+				return handle_rmFile(path);
 			}catch(Exception e) {
 				System.err.println("unlink exception");
 				e.printStackTrace();
