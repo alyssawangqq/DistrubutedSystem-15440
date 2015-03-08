@@ -341,7 +341,6 @@ class Proxy{
 				String c_path = new File(Proxy.path + path).getCanonicalPath();
 				String dir_path = new File(Proxy.path).getCanonicalPath();
 				if(!c_path.contains(dir_path)) return Errors.EPERM;
-
 				//simpe path
 				path = simplifyPath(path);
 				System.err.println("path is: " + path);
@@ -518,18 +517,18 @@ class Proxy{
 				switch(o) {
 					case FROM_CURRENT:
 						System.err.println("From current +: " + pos);
-						fs[fd].raf.seek(fs[fd].raf.getFilePointer() + pos);
-						fs_private[fd].raf.seek(fs_private[fd].raf.getFilePointer() + pos);
+						if(fs[fd].raf != null) fs[fd].raf.seek(fs[fd].raf.getFilePointer() + pos);
+						if(fs_private[fd].raf != null) fs_private[fd].raf.seek(fs_private[fd].raf.getFilePointer() + pos);
 						break;
 					case FROM_END:
 						System.err.println("length is: " +fs[fd].raf.length() + "From end +: " + pos);
-						fs[fd].raf.seek(fs[fd].raf.length() - pos);
-						fs_private[fd].raf.seek(fs_private[fd].raf.length() - pos);
+						if(fs[fd].raf != null) fs[fd].raf.seek(fs[fd].raf.length() - pos);
+						if(fs_private[fd].raf != null) fs_private[fd].raf.seek(fs_private[fd].raf.length() - pos);
 						break;
 					case FROM_START:
 						System.err.println("From end +: " + pos);
-						fs[fd].raf.seek(pos);
-						fs_private[fd].raf.seek(pos);
+						if(fs[fd].raf != null) fs[fd].raf.seek(pos);
+						if(fs_private[fd].raf != null) fs_private[fd].raf.seek(pos);
 						break;
 				}
 			}catch(IOException e) {
