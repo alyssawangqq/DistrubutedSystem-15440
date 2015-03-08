@@ -220,7 +220,7 @@ class Proxy{
 						while(remain_size < len && !cache.empty()) {
 							System.err.println("do LRU");
 							Node ptr = cache.front();
-							while(ptr.next != null && proxy_version.get(ptr.data.toString()).inUse) ptr = ptr.next; // find the first not in use //explosion here
+							while(ptr!= null && ptr.next != null && proxy_version.get(ptr.data.toString()).inUse) ptr = ptr.next; // find the first not in use //explosion here
 							File tmp = new File(Proxy.path + ptr.data.toString());
 							remain_size += tmp.length();
 							System.err.println("remain_size: " + remain_size);
@@ -256,7 +256,7 @@ class Proxy{
 					while(remain_size < len && !cache.empty()) {
 						System.err.println("do LRU");
 						Node ptr = cache.front();
-						while(ptr.next!=null && proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
+						while(ptr!= null && ptr.next!=null && proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
 						File tmp = new File(Proxy.path + ptr.data);
 						remain_size += tmp.length();
 						System.err.println("remain_size: " + remain_size);
@@ -296,7 +296,7 @@ class Proxy{
 			return 3;
 		}
 
-		public int process (String path) {
+		public synchronized int process (String path) {
 			//get fd
 			int fd = 0;
 			if(fd >= 1000) return Errors.EMFILE;
@@ -485,6 +485,7 @@ class Proxy{
 				return Errors.EBADF;
 			}
 			fs[fd].modified = true; // modified
+			System.err.println("buf.length is: "+buf.length);
 			return buf.length;
 		}
 
