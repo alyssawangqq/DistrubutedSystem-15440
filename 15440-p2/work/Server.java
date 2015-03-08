@@ -64,7 +64,7 @@ public class Server extends UnicastRemoteObject implements IServer {
 		return(buffer);
 	}
 
-	public boolean uploadFile(String path, byte[] buffer, long pos, int len) {
+	public synchronized boolean uploadFile(String path, byte[] buffer, long pos, int len) {
 		//BufferedOutputStream output = bos.get(path);
 		String abs_path = root_path + path;
 		try {

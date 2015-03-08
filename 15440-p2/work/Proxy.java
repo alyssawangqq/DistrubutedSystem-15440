@@ -90,10 +90,10 @@ class Proxy{
 	public static IServer server = null;
 	public static Hashtable<String, VersionList> proxy_version = new Hashtable<String, VersionList>();
 	public static LList<String> cache = new LList<String>();
+	public static FILES[] fs = new FILES[1000];
+	public static FILES[] fs_private = new FILES[1000];
 
 	private static class FileHandler implements FileHandling {
-		FILES[] fs = new FILES[1000];
-		FILES[] fs_private = new FILES[1000];
 
 		public static IServer getServerInstance(String ip, int port){
 			String url = String.format("//%s:%d/ServerService", ip, port);
@@ -144,9 +144,6 @@ class Proxy{
 		}
 
 		public boolean handle_uploadFile(int fd) {
-			if(fd >= 2048) {
-				fd -= 2048;
-			}
 			System.err.println("handle upload called for fd: " + fd);
 			long start = 0;
 			int len = (int)fs_private[fd].file.length();
@@ -220,10 +217,10 @@ class Proxy{
 						proxy_version.put(path, node);
 						return 3;
 					}else {
-						System.err.println("do LRU"); // TODO cannot close file that being opened
 						while(remain_size < len && !cache.empty()) {
+							System.err.println("do LRU");
 							Node ptr = cache.front();
-							while(proxy_version.get(ptr.data.toString()).inUse && ptr != null) ptr = ptr.next; // find the first not in use
+							while(ptr.next != null && proxy_version.get(ptr.data.toString()).inUse) ptr = ptr.next; // find the first not in use //explosion here
 							File tmp = new File(Proxy.path + ptr.data.toString());
 							remain_size += tmp.length();
 							System.err.println("remain_size: " + remain_size);
@@ -253,19 +250,20 @@ class Proxy{
 					//proxy_version.get(path).version = server_version;
 					remain_size += orig.length();
 					proxy_version.get(path).node.remove();
-					//cache_unlink(path); //TODO  may useful
+					cache_unlink(path); //TODO  may useful
 					//remove origin file first
 					System.err.println("server have new version"); 
 					while(remain_size < len && !cache.empty()) {
-							Node ptr = cache.front();
-							while(proxy_version.get(ptr.data).inUse && ptr!=null) ptr = ptr.next; // find the first not in use
-							File tmp = new File(Proxy.path + ptr.data);
-							remain_size += tmp.length();
-							System.err.println("remain_size: " + remain_size);
-							System.err.println("cache front: " + ptr.data);
-							System.err.println("cache back: " + ptr.data);
-							cache_unlink(ptr.data.toString());
-							ptr.remove();
+						System.err.println("do LRU");
+						Node ptr = cache.front();
+						while(ptr.next!=null && proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
+						File tmp = new File(Proxy.path + ptr.data);
+						remain_size += tmp.length();
+						System.err.println("remain_size: " + remain_size);
+						System.err.println("cache front: " + ptr.data);
+						System.err.println("cache back: " + ptr.data);
+						cache_unlink(ptr.data.toString());
+						ptr.remove();
 					}
 					if(remain_size < len) {
 						//TODO file too big
@@ -298,7 +296,7 @@ class Proxy{
 			return 3;
 		}
 
-		public synchronized int process (String path) {
+		public int process (String path) {
 			//get fd
 			int fd = 0;
 			if(fd >= 1000) return Errors.EMFILE;
@@ -311,8 +309,10 @@ class Proxy{
 			fs[fd].file = new File(Proxy.path+fs[fd].path);
 			//private
 			fs_private[fd] = new FILES();
-			fs_private[fd].path = path + fd;
+			fs_private[fd].path = path +"by"+ fd;
 			fs_private[fd].file = new File(Proxy.path+fs_private[fd].path);
+			System.err.println("fd: " + fd +"allocated");
+			if(fs[fd] == null) System.err.println("fs[fd]: is null");
 			return fd;
 		}
 
@@ -350,8 +350,8 @@ class Proxy{
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
-			int fd = process(path);
 			int compareVRet = compareVersion(path); // if miss && full, cached file should be delete before get file, remain_size should be add TODO
+			int fd = process(path);
 			switch(compareVRet) { // for errno
 				case -3:
 					return Errors.ENOMEM;
@@ -378,7 +378,7 @@ class Proxy{
 					//success
 					break;
 			}
-			if(fs[fd].file.isDirectory()) return fd + 2048;
+			//if(fs[fd].file.isDirectory()) return fd + 2048; //What ???TODO
 			try{
 				switch(o) {
 					case CREATE:
@@ -422,7 +422,7 @@ class Proxy{
 				return Errors.ENOENT;
 				//return -1;
 			}
-			return fd + 2048;
+			return fd;
 		}
 
 		public int close_all() {
@@ -437,14 +437,13 @@ class Proxy{
 
 		public synchronized int close( int fd ) {
 			System.err.println("close called for fd" + fd);
-			if(fd >= 2048) {
-				fd -= 2048;
-			}
 			if(fs[fd].modified) {
-				if(!handle_uploadFile(fd)) return -1;
+				if(!handle_uploadFile(fd)) {
+					System.err.print("upload file in close fail");
+					return -1;
+				}
 				fs[fd].modified = false;
 				if(fs[fd].file.exists()) fs[fd].file.delete();
-				fs_private[fd].file.renameTo(fs[fd].file);
 				proxy_version.get(fs[fd].path).version += 1;
 			}
 			if(fs[fd] == null) System.err.println("null fs");
@@ -453,10 +452,11 @@ class Proxy{
 			try{
 				if(fs[fd].raf != null) fs[fd].raf.close();
 				//clean inUse, and set it to top of the queue
-				proxy_version.get(fs[fd].path).inUse = false; //its a must
+				proxy_version.get(fs[fd].path).inUse = false; //its a must //explosion here
 				proxy_version.get(fs[fd].path).node.remove();
 				cache.append(fs[fd].path);
 				proxy_version.get(fs[fd].path).node = cache.back();
+				fs_private[fd].file.renameTo(fs[fd].file); //TODO rename
 				//clean public
 				fs[fd].raf = null;
 				fs[fd].file = null;
@@ -476,9 +476,6 @@ class Proxy{
 
 		public synchronized long write( int fd, byte[] buf ) {
 			System.err.println("write called for fd" + fd);
-			if(fd >= 2048) {
-				fd -= 2048;
-			}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
 				fs_private[fd].raf.write(buf);
@@ -493,9 +490,6 @@ class Proxy{
 
 		public synchronized long read( int fd, byte[] buf ) {
 			System.err.println("read called for fd" + fd);
-			if(fd >= 2048) {
-				fd -= 2048;
-			}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try {
 				int ret = fs[fd].raf.read(buf);
@@ -513,9 +507,6 @@ class Proxy{
 
 		public synchronized long lseek( int fd, long pos, LseekOption o ) { //TODO lseek write, maybe read
 			System.err.println("lseek called for fd" + fd);
-			if(fd >= 2048) {
-				fd -= 2048;
-			}
 			if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 			try{
 				switch(o) {
@@ -608,6 +599,7 @@ class Proxy{
 		Proxy.path = args[2] + File.separator;
 		Proxy.cache_size = Integer.parseInt(args[3]);
 		Proxy.remain_size = cache_size;
+		System.err.println("Proxy online with size: " + cache_size);
 		(new RPCreceiver(new FileHandlingFactory())).run();
 	}
 }
