@@ -113,7 +113,6 @@ class Proxy{
 		public boolean handle_getFile(String path, int len) {
 			long start = 0;
 			try {
-				//int len = server.getFileLen(path); // get file length
 				if(len < 0) return false; // file not exists
 				//check if need create dir
 				File tmp = new File(Proxy.path + path);
@@ -224,12 +223,12 @@ class Proxy{
 						System.err.println("do LRU"); // TODO cannot close file that being opened
 						while(remain_size < len && !cache.empty()) {
 							Node ptr = cache.front();
-							while(proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
-							File tmp = new File(Proxy.path + ptr.data);
+							while(proxy_version.get(ptr.data.toString()).inUse && ptr != null) ptr = ptr.next; // find the first not in use
+							File tmp = new File(Proxy.path + ptr.data.toString());
 							remain_size += tmp.length();
 							System.err.println("remain_size: " + remain_size);
-							System.err.println("cache front: " + ptr.data);
-							System.err.println("cache back: " + ptr.data);
+							System.err.println("cache front: " + ptr.data.toString());
+							System.err.println("cache back: " + ptr.data.toString());
 							cache_unlink(ptr.data.toString());
 							ptr.remove();
 						}
@@ -254,12 +253,12 @@ class Proxy{
 					//proxy_version.get(path).version = server_version;
 					remain_size += orig.length();
 					proxy_version.get(path).node.remove();
-					cache_unlink(path);
+					//cache_unlink(path); //TODO  may useful
 					//remove origin file first
 					System.err.println("server have new version"); 
 					while(remain_size < len && !cache.empty()) {
 							Node ptr = cache.front();
-							while(proxy_version.get(ptr.data).inUse) ptr = ptr.next; // find the first not in use
+							while(proxy_version.get(ptr.data).inUse && ptr!=null) ptr = ptr.next; // find the first not in use
 							File tmp = new File(Proxy.path + ptr.data);
 							remain_size += tmp.length();
 							System.err.println("remain_size: " + remain_size);
@@ -453,8 +452,11 @@ class Proxy{
 			if(fs[fd].file == null) System.err.println("file null");
 			try{
 				if(fs[fd].raf != null) fs[fd].raf.close();
-				//clean inUse
+				//clean inUse, and set it to top of the queue
 				proxy_version.get(fs[fd].path).inUse = false; //its a must
+				proxy_version.get(fs[fd].path).node.remove();
+				cache.append(fs[fd].path);
+				proxy_version.get(fs[fd].path).node = cache.back();
 				//clean public
 				fs[fd].raf = null;
 				fs[fd].file = null;
@@ -554,7 +556,7 @@ class Proxy{
 		}
 
 		public synchronized int cache_unlink( String path ) {
-			System.err.println("unlink called for path" + path);
+			System.err.println("cache unlink called for path" + path);
 			try {
 				File file = new File(Proxy.path+path);
 				if(!file.exists())  return Errors.ENOENT;
@@ -576,8 +578,8 @@ class Proxy{
 				if(!file.exists())  return Errors.ENOENT;
 				if(file.isDirectory()) return Errors.EISDIR;
 				if(!file.delete()) { System.err.println("unlink fail locally"); return -1;}
-				if(!handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
 				proxy_version.remove(path);
+				if(!handle_rmFile(path)) {System.err.println("unlink fail remotely"); return -1;}
 			}catch(Exception e) {
 				System.err.println("unlink exception");
 				e.printStackTrace();
@@ -600,7 +602,6 @@ class Proxy{
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.err.println("Hello World");
 		if(args.length < 4) return;
 		Proxy.server_addr = args[0];
 		Proxy.port = Integer.parseInt(args[1]);
