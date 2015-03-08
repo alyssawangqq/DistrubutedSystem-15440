@@ -181,9 +181,10 @@ class Proxy{
 			return true; //TODO false
 		}
 
-		public boolean handle_rmFile(String path) {
+		public int handle_rmFile(String path) {
 			try {
-				if(!server.rmFile(path)) return false;
+				//if(server.rmFile(path)) return false;
+				return server.rmFile(path);
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -285,10 +286,10 @@ class Proxy{
 					cache.append(path);
 					proxy_version.get(path).node = cache.back();
 					return 1;
-				} //TODO just read local file, call hit()
+				}
 				if(server_version < local_version) {System.err.println("client have new version"); 
 					return 2;
-				} //TODO maybe push to server
+				} 
 				return 3;
 			}
 			catch(RemoteException e) {
@@ -351,7 +352,7 @@ class Proxy{
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
-			int compareVRet = compareVersion(path); // if miss && full, cached file should be delete before get file, remain_size should be add TODO
+			int compareVRet = compareVersion(path);
 			int fd = process(path);
 			switch(compareVRet) { // for errno
 				case -3:
@@ -362,7 +363,6 @@ class Proxy{
 				case -1:
 					//not on server
 					System.err.println("not on server");
-					//return Errors.ENOENT;
 				case 0:
 					//if(!handle_getFile(path)) System.err.println("get file fail");
 					//get file
@@ -371,7 +371,6 @@ class Proxy{
 					//same file
 					break;
 				case 2:
-					//if(!handle_uploadFile(path)) System.err.println("upload file fail");
 					//should not be happen
 					//client newer
 					break;
@@ -379,7 +378,6 @@ class Proxy{
 					//success
 					break;
 			}
-			//if(fs[fd].file.isDirectory()) return fd + 2048; //What ???TODO
 			try{
 				switch(o) {
 					case CREATE:
@@ -389,14 +387,11 @@ class Proxy{
 							if(!fs[fd].file.exists()) fs[fd].modified = true;
 							proxy_version.put(path, new VersionList(0, cache.back(), true)); //not on server and create
 						}
-						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
 						break;
 					case CREATE_NEW:
 						System.err.println("CREATE_NEW");
-						//TODO create file on server
 						if(fs[fd].file.exists() || compareVRet != -1) return Errors.EEXIST; 
-						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						fs[fd].modified = true;
 						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
 						if(compareVRet == -1){ 
@@ -406,16 +401,13 @@ class Proxy{
 						break;
 					case READ:
 						System.err.println("READ");
-						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						if(!fs[fd].file.exists() || compareVRet == -1) return Errors.ENOENT;
 						fs[fd].raf = new RandomAccessFile(fs[fd].file, "r");
 						break;
 					case WRITE:
 						System.err.println("WRITE");
-						//if(fs[fd].file.isDirectory()) return Errors.EISDIR;
 						if(!fs[fd].file.exists() || compareVRet == -1) return Errors.ENOENT;
 						fs_private[fd].raf = new RandomAccessFile(fs_private[fd].file, "rw");
-						//fs[fd].raf = new RandomAccessFile(fs[fd].file, "rw");
 						break;
 				}			
 			}catch (FileNotFoundException e) {
@@ -458,7 +450,7 @@ class Proxy{
 				proxy_version.get(fs[fd].path).node.remove();
 				cache.append(fs[fd].path);
 				proxy_version.get(fs[fd].path).node = cache.back();
-				fs_private[fd].file.renameTo(fs[fd].file); //TODO rename
+				fs_private[fd].file.renameTo(fs[fd].file); //rename
 				//clean public
 				fs[fd].raf = null;
 				fs[fd].file = null;

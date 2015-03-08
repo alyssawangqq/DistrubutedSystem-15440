@@ -88,13 +88,16 @@ public class Server extends UnicastRemoteObject implements IServer {
 		return true;
 	}
 
-	public boolean rmFile(String path) throws RemoteException{
+	public int rmFile(String path) throws RemoteException{
 		String abs_path = root_path + File.separator + path;
 		System.err.println("Server: called rm file" + abs_path);
 		try{
 			File file = new File(abs_path);
 			System.err.println(abs_path);
-			if(!file.exists()) System.err.println("try to rm file on server, but not exists");
+			if(!file.exists()){ 
+				return Errors.ENOENT;
+				System.err.println("try to rm file on server, but not exists");
+			}
 			server_version.remove(abs_path);
 			if(!file.delete()) System.err.println("delete fail");
 			//if(!file.delete()) return false;
