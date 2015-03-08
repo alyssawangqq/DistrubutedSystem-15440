@@ -6,9 +6,17 @@ public class test{
 		//System.err.println(method(args[0]));
 		//System.err.println(args[0]);
 		//testArr();
-		num = decr(num);
-		num = decr(num);
-		System.err.println(num);
+		//num = decr(num);
+		//num = decr(num);
+		//System.err.println(num);
+
+		File f = new File("a/b/c");
+		//if(f.exists()) System.err.println("exist");
+		String s = f.getParent();
+		//System.err.println(s);
+		//String a = "/a/b/c";
+		//String b = "/a/b";
+		//System.err.println(a.replace(b, ""));
 	}
 
 	public static void testArr() {

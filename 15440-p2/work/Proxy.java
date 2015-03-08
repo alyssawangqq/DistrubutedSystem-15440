@@ -111,10 +111,14 @@ class Proxy{
 			try {
 				int len = server.getFileLen(path); // get file length
 				if(len < 0) return false; // file not exists
+				//check if need create dir
+				File tmp = new File(Proxy.path + path);
+				if(!tmp.getParentFile().exists()) new File(tmp.getParent()).mkdirs();
+				// if need, create dir
 				BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(Proxy.path+path));
-				while (len > 20000000) { // memory limit
+				while (len > 1000000) { // memory limit
 					System.err.println("len is: "+len+" start is: "+start);
-					byte data[] = server.downloadFile(path, start, 20000000);
+					byte data[] = server.downloadFile(path, start, 1000000);
 					len -= data.length;
 					output.write(data, 0, data.length);
 					start += data.length;
@@ -144,12 +148,12 @@ class Proxy{
 			long start = 0;
 			int len = (int)fs[fd].file.length();
 			System.err.println("handle upload file len: " + len);
-			byte buffer[] = new byte[20000000];
+			byte buffer[] = new byte[1000000];
 			try {
-				while (len > 20000000) {
+				while (len > 1000000) {
 					//byte buffer[20000000];
 					fs[fd].raf.seek(start);
-					int ret = fs[fd].raf.read(buffer, 0, 20000000);
+					int ret = fs[fd].raf.read(buffer, 0, 1000000);
 					if(ret < 0) {
 						break;
 					}
@@ -189,7 +193,7 @@ class Proxy{
 			//get server & check version
 			int len = 0;
 			try{
-				server = getServerInstance(server_addr, port);
+				//server = getServerInstance(server_addr, port);
 				len = server.getFileLen(path);
 			}
 			catch(Exception e) {
@@ -216,7 +220,7 @@ class Proxy{
 						proxy_version.put(path, node);
 						return 3;
 					}else {
-						System.err.println("do LRU");
+						System.err.println("do LRU"); // TODO cannot close file that being opened
 						while(remain_size < len && !cache.empty()) {
 							File tmp = new File(Proxy.path + cache.front().data);
 							remain_size += tmp.length();
@@ -302,6 +306,20 @@ class Proxy{
 
 		public synchronized int open( String path, OpenOption o ) {
 			System.err.println("open called for path: " + Proxy.path + path);
+			try{
+				server = getServerInstance(server_addr, port);
+				//change path
+				//permission check
+				String c_path = new File(Proxy.path + path).getCanonicalPath();
+				String dir_path = new File(Proxy.path).getCanonicalPath();
+				if(!c_path.contains(dir_path)) return Errors.EPERM;
+				//System.err.println(new File(path).getCanonicalPath());
+				//System.err.println(new File(server.getRootPath()).getParent());
+				path = new File(path).getCanonicalPath().replace(new File(server.getRootPath()).getParent(), "");
+				System.err.println("path is: " + path);
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
 			int fd = process(path);
 			int compareVRet = compareVersion(path); // if miss && full, cached file should be delete before get file, remain_size should be add TODO
 			switch(compareVRet) { // for errno
@@ -460,13 +478,15 @@ class Proxy{
 			try{
 				switch(o) {
 					case FROM_CURRENT:
-						fs[fd].raf.seek(pos);
+						System.err.println("From current +: " + pos);
+						fs[fd].raf.seek(fs[fd].raf.getFilePointer() + pos);
 						break;
 					case FROM_END:
+						System.err.println("length is: " +fs[fd].raf.length() + "From end +: " + pos);
 						fs[fd].raf.seek(fs[fd].raf.length() - pos);
 						break;
 					case FROM_START:
-						fs[fd].raf.seek(0);
+						System.err.println("From end +: " + pos);
 						fs[fd].raf.seek(pos);
 						break;
 				}
@@ -513,7 +533,7 @@ class Proxy{
 		if(args.length < 4) return;
 		Proxy.server_addr = args[0];
 		Proxy.port = Integer.parseInt(args[1]);
-		Proxy.path = args[2] + "/";
+		Proxy.path = args[2] + File.separator;
 		Proxy.cache_size = Integer.parseInt(args[3]);
 		Proxy.remain_size = cache_size;
 		(new RPCreceiver(new FileHandlingFactory())).run();

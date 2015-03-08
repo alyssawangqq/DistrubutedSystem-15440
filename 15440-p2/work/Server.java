@@ -20,8 +20,13 @@ public class Server extends UnicastRemoteObject implements IServer {
 		return "Hello :)";
 	}
 
+	public String getRootPath() throws RemoteException, IOException {
+		return new File(root_path).getCanonicalPath();
+	}
+
 	public int getVersion(String path) throws RemoteException {
 		File f = new File(root_path+path);
+		System.err.println("get version called for path: " + root_path+path);
 		if(!f.exists()) return -1; //-1 returned by server means file not exist on server
 		if(!server_version.containsKey(root_path+path)) {server_version.put(root_path+path, 0); return 0;} //0 means init version
 		return server_version.get(root_path+path);
@@ -99,7 +104,7 @@ public class Server extends UnicastRemoteObject implements IServer {
 	public static void main(String [] args) {
 		if(args.length < 2) return;
 		int port = Integer.parseInt(args[0]);
-		root_path = args[1] + "/";
+		root_path = args[1];
 
 		try {
 			//create the RMI registry if it doesn't exist.

@@ -3,7 +3,7 @@ all: Proxy.class IServer.class Server.class
 	javac $<
 
 clean:
-	rm -f *.class giant small *.out
+	rm -rf *.class giant small *.out
 
 grep:
 	#find /home/autograde/autolab/autograde
@@ -18,11 +18,11 @@ test_small:
 test_fuck:
 	cat /tmp/small | LD_PRELOAD=../lib/lib440lib.so ../tools/440write giant
 test_cache:
-	rm -f Cache/*
-	rm -f /tmp/cache/*
+	rm -rf Cache/*
+	rm -rf /tmp/cache/*
 	LD_PRELOAD=../lib/lib440lib.so ../tools/440cat foo
 test_upload:
-	date | LD_PRELOAD=../lib/lib440lib.so ../tools/440write foo
+	export proxyport15440=12345; date | LD_PRELOAD=../lib/lib440lib.so ../tools/440write foo
 proxy1:
 	export proxyport15440=12345;java Proxy 127.0.0.1 11122 /tmp/cache 60
 proxy2:

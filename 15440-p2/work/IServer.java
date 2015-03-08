@@ -1,4 +1,5 @@
 import java.rmi.Remote;
+import java.io.*;
 import java.rmi.RemoteException;
 
 public interface IServer extends Remote {
@@ -8,4 +9,5 @@ public interface IServer extends Remote {
 	public boolean uploadFile(String path, byte[] buffer, long pos, int len) throws RemoteException;
 	public boolean rmFile(String path) throws RemoteException;
 	public int getFileLen(String path) throws RemoteException;
+	public String getRootPath() throws RemoteException, IOException;
 }
