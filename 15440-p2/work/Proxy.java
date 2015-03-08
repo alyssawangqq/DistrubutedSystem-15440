@@ -351,8 +351,8 @@ class Proxy{
 			}catch(Exception e) {
 				e.printStackTrace();
 			}
-			int compareVRet = compareVersion(path);
 			int fd = process(path);
+			int compareVRet = compareVersion(path);
 			switch(compareVRet) { // for errno
 				case -3:
 					return Errors.ENOMEM;
