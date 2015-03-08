@@ -95,8 +95,8 @@ public class Server extends UnicastRemoteObject implements IServer {
 			File file = new File(abs_path);
 			System.err.println(abs_path);
 			if(!file.exists()){ 
-				return Errors.ENOENT;
 				System.err.println("try to rm file on server, but not exists");
+				return -1;
 			}
 			server_version.remove(abs_path);
 			if(!file.delete()) System.err.println("delete fail");
@@ -104,7 +104,7 @@ public class Server extends UnicastRemoteObject implements IServer {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-		return true;
+		return 0;
 	}
 
 	public static void main(String [] args) {
