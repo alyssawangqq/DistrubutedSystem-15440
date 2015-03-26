@@ -30,7 +30,7 @@
 15440-p2/work/Cache/
 classnotes
 #java
-#*.class
+*.class
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 # Package Files #
