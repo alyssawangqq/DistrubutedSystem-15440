@@ -1,4 +1,3 @@
-//test
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.AlreadyBoundException;
@@ -166,19 +165,29 @@ public class Server extends UnicastRemoteObject implements IServer{
 	return lackFront;
     }
 
+    public int getVMNumber(boolean b) {
+	if(b) return frontNumb;
+	else return midNumb;
+    }
+
     public synchronized int addVM(int id, boolean b) throws RemoteException{
 	if(id_roleTable.get(id) == null) {
 	    id_roleTable.put(id, b);
 	    if(b) frontNumb += 1;
 	    else midNumb += 1;
-	    return getCnt(); 
+	    return getID(); 
 	}else {
 	    return -1; // Already exists
 	}
     }
 
-    public int getCnt() throws RemoteException{
+    // tier operation/inspection
+    public int getID() throws RemoteException {
 	return id_roleTable.size();
+    }
+
+    public int getRequestQueueLength() throws RemoteException {
+	return requestQueue.size();
     }
 
     public static void getRmiList(String ip, int port) throws RemoteException {
@@ -191,8 +200,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 	}
     }
 
-    // tier operation
-    public static void shutDown(int id, boolean isFront, String ip, int port)
+    public static void shutDownVM(int id, boolean isFront, String ip, int port)
       throws RemoteException {
 	  IServer inst = null;
 	  if(isFront) inst = getInstance(ip, port, "FrontTier" + id);
@@ -224,7 +232,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 	if((vmProp.isMaster = registMaster(ip, port)) == false) {
 	    master = getInstance(ip, port, "Master");
 	    vmProp.isFrontTier = master.assignTier();
-	    vmProp.myID = master.getCnt();
+	    vmProp.myID = master.getID();
 	    master.addVM(vmProp.myID, vmProp.isFrontTier);
 	    if(vmProp.isFrontTier == false) {
 		// handle request // mid tier
@@ -257,10 +265,18 @@ public class Server extends UnicastRemoteObject implements IServer{
 		// measure current traffic
 		int deltaFront = SL.getQueueLength() - frontNumb;
 		int deltaMid = requestQueue.size() - midNumb;
-		if(deltaFront >= 0 || deltaMid >= 0) {
-		    lackFront = deltaFront > deltaMid ? true : false;
-		    int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
-		    for(int i = 0; i <= tmp; i++) {
+		if(deltaFront > 0 || deltaMid >= 0) {
+		    //lackFront = deltaFront > deltaMid ? true : false;
+		    //int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
+		    for(int i = 0; i < deltaFront; i++) {
+			lackFront = true;
+			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
+			   Cloud.CloudOps.VMStatus.NonExistent){
+			    SL.startVM();
+			}
+		    }
+		    for(int i = 0; i <= deltaMid; i++) {
+			lackFront = false;
 			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
 			   Cloud.CloudOps.VMStatus.NonExistent){
 			    SL.startVM();
@@ -268,23 +284,42 @@ public class Server extends UnicastRemoteObject implements IServer{
 		    }
 		}
 	    }else if(vmProp.isFrontTier) { //TODO drop when cannot handle
+	//	System.err.println("r len : " + master.getRequestLength());
+	//	System.err.println("queue len : " + SL.getQueueLength());
+	//	System.err.println("m len : " + master.getVMNumber(false));
+	//	while(master.getRequestLength() - master.getVMNumber(false)>=-1
+	//	      //&& SL.getStatusVM(master.getID() + 2) ==
+	//	      //Cloud.CloudOps.VMStatus.Booting)
+	//	  )
+	//	  { 
+	//	    //System.err.println("drop head");
+	//	    SL.dropHead(); 
+	//	  }
 		Cloud.FrontEndOps.Request r = SL.getNextRequest();
 		vmProp.date = new Date();
 		if(vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
 		    master.addRequest(r);
 		    vmProp.lastProcessTime = vmProp.date.getTime();
 		}else {
-		    shutDown(vmProp.myID, true, ip, port);
+		    shutDownVM(vmProp.myID, true, ip, port);
 		}
-	    }else{
-		if (master.getRequestLength() != 0) {
-		    vmProp.date = new Date();
-		    if(vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
-			SL.processRequest(master.pollRequest());
+	    }else if(!vmProp.isFrontTier) {
+		if (vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
+		    if(master.getRequestLength() != 0) {
+			Cloud.FrontEndOps.Request r = master.pollRequest();
+			if(master.getRequestLength() - master.getVMNumber(false) > 0
+			      && SL.getStatusVM(master.getID() + 2) ==
+			      Cloud.CloudOps.VMStatus.Booting) {
+			    System.err.println("drop r");
+			    SL.drop(r);
+			}else {
+			    SL.processRequest(r);
+			}
+			vmProp.date = new Date();
 			vmProp.lastProcessTime = vmProp.date.getTime();
-		    }else {
-			shutDown(vmProp.myID, false, ip, port);
 		    }
+		}else {
+		    shutDownVM(vmProp.myID, false, ip, port);
 		}
 	    }
 	}

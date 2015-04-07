@@ -12,8 +12,10 @@ public interface IServer extends Remote {
     public void addRequest(Cloud.FrontEndOps.Request r) throws RemoteException;
 
     // master inspect
-    public int addVM(int id, boolean b) throws RemoteException;
-    public int getCnt() throws RemoteException;
+    public int addVM(int i, boolean b) throws RemoteException;
+    public int getID() throws RemoteException;
+    public int getVMNumber(boolean b) throws RemoteException;
+    public int getRequestQueueLength() throws RemoteException;
 
     // other
     public ServerLib getSL() throws RemoteException;
