@@ -265,7 +265,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 		// measure current traffic
 		int deltaFront = SL.getQueueLength() - frontNumb;
 		int deltaMid = requestQueue.size() - midNumb;
-		if(deltaFront > 0 || deltaMid >= 0) {
+		if(deltaFront > 0 || deltaMid > 0) {
 		    //lackFront = deltaFront > deltaMid ? true : false;
 		    //int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
 		    for(int i = 0; i < deltaFront; i++) {
@@ -275,7 +275,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 			    SL.startVM();
 			}
 		    }
-		    for(int i = 0; i <= deltaMid; i++) {
+		    for(int i = 0; i < deltaMid; i++) {
 			lackFront = false;
 			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
 			   Cloud.CloudOps.VMStatus.NonExistent){
