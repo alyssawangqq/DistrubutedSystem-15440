@@ -5,16 +5,20 @@ import java.net.MalformedURLException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.Hashtable;
+import java.util.Arrays;
+import java.util.Date;
 import java.rmi.Naming;
 import java.rmi.Remote;
 
 class Properties {
-    public static boolean isFrontTier = false;
-    public static boolean isMaster = false;
-    public static int myID = 0;
+    boolean isFrontTier = false;
+    boolean isMaster = false;
+    int myID = 0;
+    Date date;
+    //Timestamp timeStamp;
+    long lastProcessTime;
 }
 
 public class Server extends UnicastRemoteObject implements IServer{
@@ -157,15 +161,8 @@ public class Server extends UnicastRemoteObject implements IServer{
 	  return requestQueue.size();
       }
 
-    //private boolean flag = true;
-
     public boolean assignTier() {
 	return lackFront;
-	//flag = !flag;
-	//if((midNumb / frontNumb) >= 2)
-	//  return flag;
-	//else 
-	//  return !flag;
     }
 
     public synchronized int addVM(int id, boolean b) throws RemoteException{
@@ -205,6 +202,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 	  SLinst.interruptGetNext();
 	  SLinst.shutDown();
 	  UnicastRemoteObject.unexportObject(inst, true);
+	  System.exit(0);
       }
 
     public ServerLib getSL() {
@@ -218,6 +216,9 @@ public class Server extends UnicastRemoteObject implements IServer{
 	int port = Integer.parseInt(args[1]);
 	String ip = args[0];
 	IServer master = null;
+	// time stamp
+	vmProp.date = new Date();
+	vmProp.lastProcessTime = vmProp.date.getTime();
 
 	if((vmProp.isMaster = registMaster(ip, port)) == false) {
 	    master = getInstance(ip, port, "Master");
@@ -234,7 +235,6 @@ public class Server extends UnicastRemoteObject implements IServer{
 		//System.err.println(SL.getQueueLength());
 	    }
 	}else {
-	    System.err.println("master register front");
 	    SL.register_frontend(); // Regist Master
 	    SL.startVM(); // create the first mid tier
 	    midNumb += 1;
@@ -260,17 +260,31 @@ public class Server extends UnicastRemoteObject implements IServer{
 		    lackFront = deltaFront > deltaMid ? true : false;
 		    int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
 		    for(int i = 0; i <= tmp; i++) {
-			if(SL.getStatusVM(id_roleTable.size() + i + 2) == Cloud.CloudOps.VMStatus.NonExistent)
-			  SL.startVM();
+			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
+			   Cloud.CloudOps.VMStatus.NonExistent){
+			    SL.startVM();
+			}
 		    }
 		}
-	    }
-	    if(vmProp.isFrontTier) {
+	    }else if(vmProp.isFrontTier) { //TODO drop when cannot handle
 		Cloud.FrontEndOps.Request r = SL.getNextRequest();
-		if(master != null) master.addRequest(r);
+		vmProp.date = new Date();
+		if(vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
+		    master.addRequest(r);
+		    vmProp.lastProcessTime = vmProp.date.getTime();
+		}else {
+		    shutDown(vmProp.myID, true, ip, port);
+		}
 	    }else{
-		if (master != null && master.getRequestLength() != 0)
-		  SL.processRequest(master.pollRequest());
+		if (master.getRequestLength() != 0) {
+		    vmProp.date = new Date();
+		    if(vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
+			SL.processRequest(master.pollRequest());
+			vmProp.lastProcessTime = vmProp.date.getTime();
+		    }else {
+			shutDown(vmProp.myID, false, ip, port);
+		    }
+		}
 	    }
 	}
     }
