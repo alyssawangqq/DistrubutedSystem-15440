@@ -268,7 +268,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 		if(deltaFront > 0 || deltaMid > 0) {
 		    //lackFront = deltaFront > deltaMid ? true : false;
 		    //int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
-		    for(int i = 0; i <= deltaFront; i++) {
+		    for(int i = 0; i < deltaFront; i++) {
 			lackFront = true;
 			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
 			   Cloud.CloudOps.VMStatus.NonExistent){
