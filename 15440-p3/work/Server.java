@@ -265,7 +265,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 		// measure current traffic
 		int deltaFront = SL.getQueueLength() - frontNumb;
 		int deltaMid = requestQueue.size() - midNumb;
-		if(deltaFront > 0 || deltaMid > 0) {
+		if(deltaFront > 0 || deltaMid >= 0) {
 		    //lackFront = deltaFront > deltaMid ? true : false;
 		    //int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
 		    for(int i = 0; i < deltaFront; i++) {
