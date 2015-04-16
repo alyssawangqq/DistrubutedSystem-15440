@@ -1,8 +1,10 @@
 //Check Point 2 Final Version
+import java.util.concurrent.locks.ReentrantLock;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.AlreadyBoundException;
 import java.net.MalformedURLException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.io.Serializable;
@@ -17,38 +19,45 @@ class Properties {
     boolean isFrontTier = false;
     boolean isMaster = false;
     int myID = 0;
-    Date date;
+    Date date = new Date();
     //Timestamp timeStamp;
     long lastProcessTime;
 }
 
 public class Server extends UnicastRemoteObject implements IServer{
     public static String [] rmiRegistryList; // 100 total registry most
-    public static LinkedList<Cloud.FrontEndOps.Request> requestQueue;
+    public static LinkedList<Request> requestQueue;
     public static Hashtable<Integer, Boolean> id_roleTable = new Hashtable<Integer, Boolean>();
     public Server() throws RemoteException {}
+    //public static Cache cache;
 
     private static Properties vmProp = new Properties();
     private static ServerLib SL;
     private static int frontNumb = 0;
     private static int midNumb = 0;
+    private static long incomingRate = 3333;
+    private static long purchaseTh = 1400;
     private static boolean lackFront = false;
+    private static final ReentrantLock lock = new ReentrantLock();
 
     // java RMI
-    public static IServer getInstance(String ip, int port, String name) throws RemoteException {
-	String url = String.format("//%s:%d/%s", ip, port, name);
-	try{
-	    return (IServer) Naming.lookup (url);
-	} catch (Exception e) {
-	    System.err.println(e);
-	    return null;
-	}
-    }
+    @SuppressWarnings("unchecked")
+      public static <T> T getInstance(String ip, int port, String name) throws RemoteException {
+	  String url = String.format("//%s:%d/%s", ip, port, name);
+	  try{
+	      return (T) Naming.lookup (url);
+	  } catch (Exception e) {
+	      System.err.println(e);
+	      return null;
+	  }
+      }
 
     public static boolean registMaster(String ip, int port) throws RemoteException {
 	Server server = null;
 	frontNumb += 1;
-	requestQueue = new LinkedList<Cloud.FrontEndOps.Request>();
+	requestQueue = new LinkedList<Request>();
+	//System.err.println("id table: " + id_roleTable.size());
+	//requestQueueWithTime = new Hashtable<Cloud.FrontEndOps.Request, Long>();
 	rmiRegistryList = new String[100];
 	try{
 	    server = new Server();
@@ -138,28 +147,48 @@ public class Server extends UnicastRemoteObject implements IServer{
     }
 
     // master operation
-    public synchronized Cloud.FrontEndOps.Request pollRequest()
+    public synchronized Request pollRequest()
       throws RemoteException{
-	  return requestQueue.poll();
+	  lock.lock();
+	  Request req = null;
+	  try { req = requestQueue.pollFirst(); }
+	  catch(Exception e) { e.printStackTrace(); }
+	  finally {
+	      lock.unlock();
+	      return req;
+	  }
       }
 
-    public synchronized void addRequest(Cloud.FrontEndOps.Request r) 
+    public synchronized long getRequestStartTime(Request req) 
       throws RemoteException{
-	  requestQueue.add(r);
+	  return req.timeArrived;
       }
 
-    public static synchronized void masterAddRequest(Cloud.FrontEndOps.Request r) {
-	requestQueue.add(r);
+    public synchronized void addRequest(Request req)
+      throws RemoteException{
+	  lock.lock();
+	  requestQueue.add(req);
+	  lock.unlock();
+      }
+
+    public static synchronized void masterAddRequest(Request req) {
+	lock.lock();
+	requestQueue.add(req);
+	lock.unlock();
     }
 
-    public Cloud.FrontEndOps.Request peekRequest() 
+    public Request peekRequest() 
       throws RemoteException{
 	  return requestQueue.peek();
       }
 
-    public int getRequestLength()
+    public synchronized int getRequestLength()
       throws RemoteException{
-	  return requestQueue.size();
+	  lock.lock();
+	  int size = 0;
+	  try{ size = requestQueue.size(); }
+	  finally { lock.unlock(); }
+	  return size;
       }
 
     public boolean assignTier() {
@@ -183,6 +212,14 @@ public class Server extends UnicastRemoteObject implements IServer{
     }
 
     // tier operation/inspection
+    public int getVMNumb() throws RemoteException {
+	return frontNumb + midNumb;
+    }
+
+    public long getIncomingRate() throws RemoteException {
+	return incomingRate;
+    }
+
     public int getID() throws RemoteException {
 	return id_roleTable.size();
     }
@@ -203,20 +240,32 @@ public class Server extends UnicastRemoteObject implements IServer{
 
     public static void shutDownVM(int id, boolean isFront, String ip, int port)
       throws RemoteException {
+	  System.err.println("shutDown!");
 	  IServer inst = null;
-	  if(isFront) inst = getInstance(ip, port, "FrontTier" + id);
-	  else inst = getInstance(ip, port, "MidTier" + id);
+	  if(isFront) inst = Server.<IServer>getInstance(ip, port, "FrontTier" + id);
+	  else inst = Server.<IServer>getInstance(ip, port, "MidTier" + id);
 
-	  // do clean shutdown
-	  ServerLib SLinst = inst.getSL();
-	  SLinst.interruptGetNext();
-	  SLinst.shutDown();
-	  UnicastRemoteObject.unexportObject(inst, true);
+	  //// do clean shutdown
+	  //ServerLib SLinst = inst.getSL();
+	  //SLinst.interruptGetNext();
+	  //SLinst.shutDown();
+	  SL.interruptGetNext();
+	  SL.shutDown();
+	  try {
+	      UnicastRemoteObject.unexportObject(inst, true);
+	      inst = null;
+	  } catch (NoSuchObjectException e) {
+	      e.printStackTrace();
+	  }
 	  System.exit(0);
       }
 
     public ServerLib getSL() {
 	return SL;
+    }
+
+    public Cloud.DatabaseOps getRealDB() {
+	return SL.getDB();
     }
 
     public static void main ( String args[] ) throws Exception {
@@ -231,7 +280,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 	vmProp.lastProcessTime = vmProp.date.getTime();
 
 	if((vmProp.isMaster = registMaster(ip, port)) == false) {
-	    master = getInstance(ip, port, "Master");
+	    master = Server.<IServer>getInstance(ip, port, "Master");
 	    vmProp.isFrontTier = master.assignTier();
 	    vmProp.myID = master.getID();
 	    master.addVM(vmProp.myID, vmProp.isFrontTier);
@@ -242,15 +291,21 @@ public class Server extends UnicastRemoteObject implements IServer{
 		// register
 		registFrontTier(ip, port, vmProp.myID);
 		SL.register_frontend();
-		//System.err.println(SL.getQueueLength());
 	    }
 	}else {
-	    SL.register_frontend(); // Regist Master
+	    SL.register_frontend(); // Regist Master TODO: consider change
+	    //Master to Mid Tier
 	    SL.startVM(); // create the first mid tier
 	    midNumb += 1;
+	    if(Cache.main(args)){
+		System.err.println("regist Cach success");
+	    }else {
+		System.err.println("regist Cach fail");
+	    }	      // register Cache
 	}
 
 	//getRmiList(ip, port);
+	Cloud.DatabaseOps cache = Server.<Cloud.DatabaseOps>getInstance(ip, port, "Cache");
 
 	// main loop
 	while (true) {
@@ -261,14 +316,14 @@ public class Server extends UnicastRemoteObject implements IServer{
 		if(SL.getStatusVM(2) == Cloud.CloudOps.VMStatus.Booting) {
 		    SL.drop(r);
 		}else {
-		    masterAddRequest(r);
+		    vmProp.date = new Date();
+		    Request req = new Request(r, vmProp.date.getTime());
+		    masterAddRequest(req);
 		}
 		// measure current traffic
 		int deltaFront = SL.getQueueLength() - frontNumb;
 		int deltaMid = requestQueue.size() - midNumb;
 		if(deltaFront > 0 || deltaMid > 0) {
-		    //lackFront = deltaFront > deltaMid ? true : false;
-		    //int tmp = deltaFront > deltaMid ? deltaFront : deltaMid;
 		    for(int i = 0; i < deltaFront; i++) {
 			lackFront = true;
 			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
@@ -285,45 +340,70 @@ public class Server extends UnicastRemoteObject implements IServer{
 		    }
 		}
 	    }else if(vmProp.isFrontTier) { //TODO drop when cannot handle
-	//	System.err.println("r len : " + master.getRequestLength());
-	//	System.err.println("queue len : " + SL.getQueueLength());
-	//	System.err.println("m len : " + master.getVMNumber(false));
-	//	while(master.getRequestLength() - master.getVMNumber(false)>=-1
-	//	      //&& SL.getStatusVM(master.getID() + 2) ==
-	//	      //Cloud.CloudOps.VMStatus.Booting)
-	//	  )
-	//	  { 
-	//	    //System.err.println("drop head");
-	//	    SL.dropHead(); 
-	//	  }
-		Cloud.FrontEndOps.Request r = SL.getNextRequest();
+		//	System.err.println("r len : " + master.getRequestLength());
+		//	System.err.println("queue len : " + SL.getQueueLength());
+		//	System.err.println("m len : " + master.getVMNumber(false));
+		//	while(master.getRequestLength() - master.getVMNumber(false)>=-1
+		//	      //&& SL.getStatusVM(master.getID() + 2) ==
+		//	      //Cloud.CloudOps.VMStatus.Booting)
+		//	  )
+		//	  { 
+		//	    //System.err.println("drop head");
+		//	    SL.dropHead(); 
+		//	  }
 		vmProp.date = new Date();
-		if(vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
-		    master.addRequest(r);
+		if(vmProp.date.getTime() - vmProp.lastProcessTime <
+		   //(master.getIncomingRate() < 1000? 3333 :
+		   //master.getIncomingRate())) {
+		   incomingRate) {
+		    Cloud.FrontEndOps.Request r = SL.getNextRequest();
+		    vmProp.date = new Date();
+		    Request req = new Request(r, vmProp.date.getTime());
+		    master.addRequest(req);
 		    vmProp.lastProcessTime = vmProp.date.getTime();
 		}else {
-		    shutDownVM(vmProp.myID, true, ip, port);
+		    SL.unregister_frontend();
+		    if(master.getVMNumb() > 2) shutDownVM(vmProp.myID, true, ip, port); // Numb and Number T T
 		}
 	    }else if(!vmProp.isFrontTier) {
-		if (vmProp.date.getTime() - vmProp.lastProcessTime < 7000) {
-		    if(master.getRequestLength() != 0) {
-			Cloud.FrontEndOps.Request r = master.pollRequest();
-			if(master.getRequestLength() - master.getVMNumber(false) > 0
-			      && SL.getStatusVM(master.getID() + 2) ==
-			      Cloud.CloudOps.VMStatus.Booting) {
-			    //System.err.println("drop r");
-			    SL.drop(r);
+		vmProp.date = new Date();
+		if (vmProp.date.getTime() - vmProp.lastProcessTime <
+		    //(master.getIncomingRate() < 1000? 3333 :
+		    //master.getIncomingRate())) {
+		    incomingRate) {
+		    int length;
+		    if((length = master.getRequestLength()) > 0) {
+			Request r = master.pollRequest();
+			if(r == null) continue; // TODO: why r will be null
+			if(length - master.getVMNumber(false) > 0 &&
+			   SL.getStatusVM(master.getID() + 2) ==
+			   Cloud.CloudOps.VMStatus.Booting) {
+			    SL.drop(r._r);
 			}else {
-			    SL.processRequest(r);
+			    vmProp.date = new Date();
+			    //System.err.println(vmProp.date.getTime());
+			    //System.err.println(r.timeArrived);
+			    if(r._r.isPurchase && ((vmProp.date.getTime() - r.timeArrived) > purchaseTh)) { 
+				System.err.println("no way to handle purchase, drop");
+				SL.drop(r._r);
+			    }else {
+				//System.err.println("length is " + length);
+				SL.processRequest(r._r, cache);
+			    }
 			}
 			vmProp.date = new Date();
 			vmProp.lastProcessTime = vmProp.date.getTime();
 		    }
 		}else {
-		    shutDownVM(vmProp.myID, false, ip, port);
+		    if(master.getVMNumb() > 2) shutDownVM(vmProp.myID, true, ip, port);
 		}
 	    }
 	}
     }
 }
 
+// test log : 20s - 100 , total time: 5292792 VM 50 Bad:140
+// test log : 20s - 100 , total time: 596309 VM 15 Bad:160
+// test log : 20s - 100 , total time: 647491
+// test log : 20s - 100 , total time: 1540670 VM 19
+// test log : 40s - 100 , total time: 1396999
