@@ -35,10 +35,11 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static ServerLib SL;
     private static int frontNumb = 0;
     private static int midNumb = 0;
+    private static boolean init = false;
     private static long activeTh = 3333;
     private static long lastincoming = 0;
     private static long incomingRate = 0;
-    private static long purchaseTh = 100; // should be higher [Air 250, GHC ?]
+    private static long purchaseTh = 1000; // should be higher [Air 250, GHC 500]
     private static boolean lackFront = false;
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -57,6 +58,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     public static boolean registMaster(String ip, int port) throws RemoteException {
 	Server server = null;
 	frontNumb += 1;
+	init = true;
 	requestQueue = new LinkedList<Request>();
 	//System.err.println("id table: " + id_roleTable.size());
 	//requestQueueWithTime = new Hashtable<Cloud.FrontEndOps.Request, Long>();
@@ -319,20 +321,35 @@ public class Server extends UnicastRemoteObject implements IServer{
 	    //queue len should < numb_fonrt and request queue shoud < numb_mid
 	    if(vmProp.isMaster) {
 		// init drop
+		updateIncomTime();
+		int initNumb = 2;
+		//if(incomingRate < 100 && init) { // TODO: why this will cause problem ?
+		//    System.err.println("master init start");
+		//    for(int i = 0; i < 8; i++) {
+		//	lackFront = false;
+		//	if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
+		//	   Cloud.CloudOps.VMStatus.NonExistent)
+		//	   { SL.startVM(); }
+		//    }
+		//    initNumb += 8;
+		//    init = false;
+		//    System.err.println("table size" + id_roleTable.size());
+		//}
+		// TODO: open up 10 VM if incoming Rate < 200
 		Cloud.FrontEndOps.Request r = SL.getNextRequest();
-		System.err.println("incoming rate: " + incomingRate);
-		if(SL.getStatusVM(2) == Cloud.CloudOps.VMStatus.Booting) {
-		    SL.drop(r);
-		}else {
-		  vmProp.date = new Date();
-		  Request req = new Request(r, vmProp.date.getTime());
-		  masterAddRequest(req);
-		  updateIncomTime();
+		//System.err.println("incoming rate: " + incomingRate);
+		if(SL.getStatusVM(initNumb) == Cloud.CloudOps.VMStatus.Booting ) 
+		  { SL.drop(r); }
+		else {
+		    vmProp.date = new Date();
+		    Request req = new Request(r, vmProp.date.getTime());
+		    masterAddRequest(req);
 		}
 		// measure current traffic
 		int deltaFront = SL.getQueueLength() - frontNumb;
 		int deltaMid = requestQueue.size() -  midNumb;
-		if(deltaFront > frontNumb || deltaMid > midNumb) {
+		System.err.println("table size after init: " + id_roleTable.size());
+		if(deltaFront > 0 || deltaMid > 0) {
 		    for(int i = 0; i < deltaFront; i++) {
 			lackFront = true;
 			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
@@ -348,7 +365,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 			}
 		    }
 		}
-	    }else if(vmProp.isFrontTier) { //TODO drop when cannot handle
+	    }else if(vmProp.isFrontTier) { //TODO drop when cannot handle // consider work more here
 		//	System.err.println("r len : " + master.getRequestLength());
 		//	System.err.println("queue len : " + SL.getQueueLength());
 		//	System.err.println("m len : " + master.getVMNumber(false));
@@ -395,27 +412,28 @@ public class Server extends UnicastRemoteObject implements IServer{
 			      //}
 			      long rate = master.getIncomingRate();
 			      if(r._r.isPurchase && ((vmProp.date.getTime() - r.timeArrived) > 
-						     (rate > purchaseTh ? purchaseTh:rate))) { 
-				  System.err.println("no way to handle purchase, drop");
-				  SL.drop(r._r);
-			      }else {
-				  //System.err.println("length is " + length);
-				  SL.processRequest(r._r, cache);
-			      }
+						     //(rate > purchaseTh ? purchaseTh : rate))) { 
+				rate + purchaseTh)){
+				    System.err.println("no way to handle purchase, drop");
+				    SL.drop(r._r);
+				}else {
+				    //System.err.println("length is " + length);
+				    SL.processRequest(r._r, cache);
+				}
 			  }
 			  vmProp.date = new Date();
 			  vmProp.lastProcessTime = vmProp.date.getTime();
+			  }
+		      }else {
+			  if(master.getVMNumb() > 2) shutDownVM(vmProp.myID, true, ip, port);
 		      }
-		  }else {
-		      if(master.getVMNumb() > 2) shutDownVM(vmProp.myID, true, ip, port);
 		  }
 	    }
 	    }
 	    }
-	}
 
-	// test log : 20s - 100 , total time: 5292792 VM 50 Bad:140
-	// test log : 20s - 100 , total time: 596309 VM 15 Bad:160
-	// test log : 20s - 100 , total time: 647491
-	// test log : 20s - 100 , total time: 1540670 VM 19
-	// test log : 40s - 100 , total time: 1396999
+	    // test log : 20s - 100 , total time: 5292792 VM 50 Bad:140
+	    // test log : 20s - 100 , total time: 596309 VM 15 Bad:160
+	    // test log : 20s - 100 , total time: 647491
+	    // test log : 20s - 100 , total time: 1540670 VM 19
+	    // test log : 40s - 100 , total time: 1396999
