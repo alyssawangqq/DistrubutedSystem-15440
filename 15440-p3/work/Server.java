@@ -332,7 +332,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 		// measure current traffic
 		int deltaFront = SL.getQueueLength() - frontNumb;
 		int deltaMid = requestQueue.size() -  midNumb;
-		if(deltaFront > frontNumb || deltaMid > midNumb || incomingRate) {
+		if(deltaFront > frontNumb || deltaMid > midNumb) {
 		    for(int i = 0; i < deltaFront; i++) {
 			lackFront = true;
 			if(SL.getStatusVM(id_roleTable.size() + i + 2) == 
