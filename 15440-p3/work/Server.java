@@ -36,6 +36,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static int frontNumb = 0;
     private static int midNumb = 0;
     private static boolean init = false;
+    private static int initNumb = 2;
     private static long activeTh = 3333;
     private static long lastincoming = 0;
     private static long incomingRate = 0;
@@ -320,15 +321,14 @@ public class Server extends UnicastRemoteObject implements IServer{
 		//long startTime = 100000000;
 		//if(incomingRate > startTime) continue;
 		//System.err.println("interval: " + incomingRate);
-		int initNumb = 2;
 		//init new 
-		int frontNeeded = (int)(700/incomingRate);
-		int midNeeded = (int)(700/incomingRate);
+		int frontNeeded = (int)(300/incomingRate);
+		int midNeeded = (int)(750/incomingRate);
 
-		if(frontNumb < frontNeeded || midNumb < midNeeded) {
+		if(midNumb < midNeeded || frontNumb < frontNeeded) {
 		    for(int i = 0; i < midNeeded - midNumb; i++) {
 		        lackFront = false;
-		        if(SL.getStatusVM(midNeeded + i + 1) == 
+		        if(SL.getStatusVM(midNumb + i + 1) == 
 		           Cloud.CloudOps.VMStatus.NonExistent){
 		            SL.startVM();
 		        }
@@ -394,17 +394,17 @@ public class Server extends UnicastRemoteObject implements IServer{
 		//}
 
 	    }else if(vmProp.isFrontTier) { //TODO drop when cannot handle // consider work more here
-		//	System.err.println("r len : " + master.getRequestLength());
-		//	System.err.println("queue len : " + SL.getQueueLength());
-		//	System.err.println("m len : " + master.getVMNumber(false));
-		//	while(master.getRequestLength() - master.getVMNumber(false)>=-1
-		//	      //&& SL.getStatusVM(master.getID() + 2) ==
-		//	      //Cloud.CloudOps.VMStatus.Booting)
-		//	  )
-		//	  { 
-		//	    //System.err.println("drop head");
-		//	    SL.dropHead(); 
-		//	  }
+			//System.err.println("r len : " + master.getRequestLength());
+			//System.err.println("queue len : " + SL.getQueueLength());
+			//System.err.println("m len : " + master.getVMNumber(false));
+			while(master.getRequestLength() - master.getVMNumber(false)>0
+			      //&& SL.getStatusVM(master.getID() + 2) ==
+			      //Cloud.CloudOps.VMStatus.Booting)
+			  )
+			  { 
+			    //System.err.println("drop head");
+			    SL.dropHead(); 
+			  }
 		vmProp.date = new Date();
 		if(vmProp.date.getTime() - vmProp.lastProcessTime < activeTh) {
 		    // detect time interval
