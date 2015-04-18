@@ -37,7 +37,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static int midNumb = 0;
     private static boolean init = false;
     private static int initNumb = 2;
-    private static int id = 0;
+    private static int master_id_cnt = 0;
     private static long activeTh = 3333;
     private static int moreTh = 8;
     private static long lastincoming = 0;
@@ -215,12 +215,13 @@ public class Server extends UnicastRemoteObject implements IServer{
     public synchronized int addVM(int id, boolean b) throws RemoteException{
 	if(id_roleTable.get(id) == null) {
 	    id_roleTable.put(id, b);
+			master_id_cnt++;
 	    if(b) frontNumb += 1;
 	    else midNumb += 1;
 	    //System.err.println("get id: " +getID());
 	    //System.err.println("total numb" + (frontNumb + midNumb));
-	    id++;
-	    return getID(); 
+	    //return getID(); 
+			return 1;
 	}else {
 	    return -1; // Already exists
 	}
@@ -236,7 +237,12 @@ public class Server extends UnicastRemoteObject implements IServer{
     }
 
     public synchronized int getID() throws RemoteException {
-	return id_roleTable.size() <= id?id_roleTable.size():id;
+	    //System.err.println("get id: " + id);
+	    //System.err.println("table id: " + id_roleTable.size());
+	//return id_roleTable.size() == id?id_roleTable.size():id;
+			//return id++;
+			return master_id_cnt;
+			//return id_roleTable.size();
     }
 
     public int getRequestQueueLength() throws RemoteException {
@@ -336,8 +342,8 @@ public class Server extends UnicastRemoteObject implements IServer{
 		int deltaMid = requestQueue.size() -  midNumb;
 
 		if(incomingRate > 0 ) {
-		    if (deltaFront < 0 && deltaMid < 0 &&
-			!init) continue;
+		    //if (deltaFront < 0 && deltaMid < 0 && !init) {
+				//}else {
 		    int frontNeeded = (int)(300/incomingRate);
 		    int midNeeded = (int)(750/incomingRate);
 
@@ -358,6 +364,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 			    }
 			}
 		    }
+				//}
 		}
 
 		//if(incomingRate < 100 && !init) { // TODO: why this will cause problem ? lack front
@@ -445,7 +452,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 			Request r = master.pollRequest();
 			//long test_record = vmProp.date.getTime();
 			if(r == null) continue; // TODO: why r will be null
-			if(length - master.getVMNumber(false) > moreTh &&
+			if(length - master.getVMNumber(false) > 0 &&
 			   SL.getStatusVM(master.getID() + 2) ==
 			   Cloud.CloudOps.VMStatus.Booting) {
 			    SL.drop(r._r);
