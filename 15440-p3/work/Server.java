@@ -118,7 +118,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static boolean init = false;
     private static int initNumb = 2;
     private static int master_id_cnt = 0;
-    private static long activeTh = 4444;
+    private static long activeTh = 3333;
     private static int moreTh = 0;
     private static int request_cnt = 0;
     private static long [] requestIncomArray;
