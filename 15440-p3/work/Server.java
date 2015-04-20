@@ -59,10 +59,10 @@ class calculateRequestInterval implements Runnable{
 		    frontNeeded = 2;
 		    midNeeded = 5;
 		}else if(rps >= 20 && rps < 30) {
-		    frontNeeded = 3;
-		    midNeeded = 8;
+		    frontNeeded = 2;
+		    midNeeded = 7;
 		} else if(rps > 30) {
-		    frontNeeded = 3;
+		    frontNeeded = 2;
 		    midNeeded = 9;
 		}
 
