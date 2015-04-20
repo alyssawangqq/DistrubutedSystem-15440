@@ -23,4 +23,5 @@ public interface IServer extends Remote {
     // other
     public ServerLib getSL() throws RemoteException;
     public Cloud.DatabaseOps getRealDB() throws RemoteException;
+    public void tellMasterNewReq(int length) throws RemoteException;
 }
