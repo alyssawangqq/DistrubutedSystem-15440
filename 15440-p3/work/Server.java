@@ -60,10 +60,10 @@ class calculateRequestInterval implements Runnable{
 		    midNeeded = 4;
 		}else if(rps >= 20 && rps < 30) {
 		    frontNeeded = 3;
-		    midNeeded = 9;
+		    midNeeded = 10;
 		} else if(rps > 30) {
 		    frontNeeded = 3;
-		    midNeeded = 10;
+		    midNeeded = 11;
 		}
 		if(mn < midNeeded) {
 		    for(int i = 0; i < midNeeded - mn; i++) {
@@ -118,8 +118,8 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static boolean init = false;
     private static int initNumb = 2;
     private static int master_id_cnt = 0;
-    private static long activeTh = 3333;
-    private static int moreTh = 0;
+    private static long activeTh = 4444;
+    private static int moreTh = 2;
     private static int request_cnt = 0;
     private static long [] requestIncomArray;
     private static long lastincoming = 0;
@@ -557,12 +557,12 @@ public class Server extends UnicastRemoteObject implements IServer{
 		//System.err.println("queue len : " + SL.getQueueLength());
 		//System.err.println("m len : " + master.getVMNumber(false));
 		while(master.getRequestLength() - master.getVMNumber(false) > moreTh
-		      && SL.getStatusVM(master.getVMNumber(false) +
-					master.getVMNumber(true)) ==
-		      (Cloud.CloudOps.VMStatus.Booting)
+		      //&& SL.getStatusVM(master.getVMNumber(false) +
+		      //  		master.getVMNumber(true)) ==
+		      //(Cloud.CloudOps.VMStatus.Booting)
 		  )
 		    { 
-		      System.err.println("head drop");
+		      //System.err.println("head drop");
 		      SL.dropHead(); 
 		      master.tellMasterNewReq(1);
 		    }
@@ -592,14 +592,14 @@ public class Server extends UnicastRemoteObject implements IServer{
 		    int length;
 		    if((length = master.getRequestLength()) > 0) {
 			//long test_record = vmProp.date.getTime();
-			while((length - master.getVMNumber(false) > moreTh) &&
-			   SL.getStatusVM(master.getID() + 2) ==
-			   Cloud.CloudOps.VMStatus.Booting) {
-			    Request r = master.pollRequest();
-			    System.err.println("mid drop");
-			    if(r == null) break;
-			    SL.drop(r._r);
-			}
+			//while((length - master.getVMNumber(false) > moreTh) &&
+			//   SL.getStatusVM(master.getID() + 2) ==
+			//   Cloud.CloudOps.VMStatus.Booting) {
+			//    Request r = master.pollRequest();
+			//    System.err.println("mid drop");
+			//    //if(r == null) break;
+			//    //SL.drop(r._r);
+			//}
 			    Request r = master.pollRequest();
 			    if(r == null) continue; // TODO: why r will be null
 			//}else {
