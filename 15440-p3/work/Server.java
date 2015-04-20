@@ -119,7 +119,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static int initNumb = 2;
     private static int master_id_cnt = 0;
     private static long activeTh = 4444;
-    private static int moreTh = 2;
+    private static int moreTh = 3;
     private static int request_cnt = 0;
     private static long [] requestIncomArray;
     private static long lastincoming = 0;
@@ -127,6 +127,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static long incomingRate = 0;
     private static Server server = null;
     private static long purchaseTh = 1500; // should be higher [Air 250, GHC 500]
+    private static long browseTh = 600; // should be higher [Air 250, GHC 500]
     //private static boolean lackFront = false;
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -603,8 +604,8 @@ public class Server extends UnicastRemoteObject implements IServer{
 			    Request r = master.pollRequest();
 			    if(r == null) continue; // TODO: why r will be null
 			//}else {
-			    long rate = master.getIncomingRate();
-			    if(r._r.isPurchase && ((vmProp.date.getTime() - r.timeArrived) > rate + purchaseTh)){
+			    if(r._r.isPurchase && ((vmProp.date.getTime() - r.timeArrived) > purchaseTh) ||
+				vmProp.date.getTime() - r.timeArrived > browseTh){
 				System.err.println("no way to handle purchase, drop");
 				SL.drop(r._r);
 			    }else {
