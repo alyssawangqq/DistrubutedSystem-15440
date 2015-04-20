@@ -43,32 +43,32 @@ class calculateRequestInterval implements Runnable{
 	    if(idx > slots - 1) {
 		idx = 0; initBootTime -= 1; 
 		int rps = getRequestRate();
-		System.err.println(rps);
 		if(initBootTime > 0) { rps *= 4; }
+		System.err.println(rps);
 		//int midNeeded = (int)(rps/35);
 		int fn = server.getFrontEndNumb();
 		int mn = server.getMidNumb();
 		int midNeeded = 0; int frontNeeded = 0;
 		if(rps < 5) {
 		    frontNeeded = 1;
-		    midNeeded = 1;
+		    midNeeded = 2;
 		}else if(rps >=5 && rps < 10) {
 		    frontNeeded = 1;
-		    midNeeded = 2;
+		    midNeeded = 3;
 		}else if(rps >= 10 && rps < 20) {
 		    frontNeeded = 2;
-		    midNeeded = 4;
+		    midNeeded = 5;
 		}else if(rps >= 20 && rps < 30) {
 		    frontNeeded = 3;
-		    midNeeded = 10;
+		    midNeeded = 9;
 		} else if(rps > 30) {
 		    frontNeeded = 3;
-		    midNeeded = 11;
+		    midNeeded = 10;
 		}
 		if(mn < midNeeded) {
 		    for(int i = 0; i < midNeeded - mn; i++) {
 			server.pushToQueue(false);
-			if(server.SL.getStatusVM(midNeeded + 1) == 
+			if(server.SL.getStatusVM(midNeeded) == 
 			   Cloud.CloudOps.VMStatus.NonExistent){
 			    server.SL.startVM();
 			}
@@ -78,7 +78,7 @@ class calculateRequestInterval implements Runnable{
 		if(fn < frontNeeded) {
 		    for(int i = 0; i < frontNeeded - fn; i++) {
 			server.pushToQueue(true);
-			if(server.SL.getStatusVM(frontNeeded + 1) == 
+			if(server.SL.getStatusVM(frontNeeded) == 
 			   Cloud.CloudOps.VMStatus.NonExistent){
 			    server.SL.startVM();
 			}
@@ -118,16 +118,16 @@ public class Server extends UnicastRemoteObject implements IServer{
     private static boolean init = false;
     private static int initNumb = 2;
     private static int master_id_cnt = 0;
-    private static long activeTh = 4444;
-    private static int moreTh = 3;
+    private static long activeTh = 3333;
+    private static int moreTh = 4;
     private static int request_cnt = 0;
     private static long [] requestIncomArray;
     private static long lastincoming = 0;
     private static long incomingRate_record = 0;
     private static long incomingRate = 0;
     private static Server server = null;
-    private static long purchaseTh = 1500; // should be higher [Air 250, GHC 500]
-    private static long browseTh = 600; // should be higher [Air 250, GHC 500]
+    private static long purchaseTh = 1500;
+    private static long browseTh = 900;
     //private static boolean lackFront = false;
     private static final ReentrantLock lock = new ReentrantLock();
 
@@ -317,7 +317,6 @@ public class Server extends UnicastRemoteObject implements IServer{
     public synchronized int addVM(int id, boolean b) throws RemoteException{
 	if(id_roleTable.get(id) == null) {
 	    id_roleTable.put(id, b);
-	    master_id_cnt++;
 	    if(b) frontNumb += 1;
 	    else midNumb += 1;
 	    //System.err.println("get id: " +getID());
@@ -339,7 +338,7 @@ public class Server extends UnicastRemoteObject implements IServer{
     }
 
     public synchronized int getID() throws RemoteException {
-	return master_id_cnt;
+	return master_id_cnt++;
     }
 
     public int getRequestQueueLength() throws RemoteException {
@@ -520,8 +519,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 		Cloud.FrontEndOps.Request r = SL.getNextRequest();
 		int length = SL.getQueueLength();
 		if(length >= 0) currentRequestNumb += 1;
-		if(SL.getStatusVM(initNumb) == Cloud.CloudOps.VMStatus.Booting || 
-		   SL.getStatusVM(getFrontEndNumb() + getMidNumb()) == Cloud.CloudOps.VMStatus.Booting)
+		if(SL.getStatusVM(initNumb) == Cloud.CloudOps.VMStatus.Booting)
 		  { SL.drop(r); }
 		else {
 		    vmProp.date = new Date();
@@ -606,7 +604,7 @@ public class Server extends UnicastRemoteObject implements IServer{
 			//}else {
 			    if(r._r.isPurchase && ((vmProp.date.getTime() - r.timeArrived) > purchaseTh) ||
 				vmProp.date.getTime() - r.timeArrived > browseTh){
-				System.err.println("no way to handle purchase, drop");
+				//System.err.println("no way to handle purchase, drop");
 				SL.drop(r._r);
 			    }else {
 				SL.processRequest(r._r, cache);
