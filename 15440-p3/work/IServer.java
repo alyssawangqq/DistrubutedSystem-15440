@@ -11,6 +11,7 @@ public interface IServer extends Remote {
     public int getRequestLength() throws RemoteException;
     public void addRequest(Request r) throws RemoteException;
     public long getRequestStartTime(Request r) throws RemoteException;
+    public void removeVM(boolean b) throws RemoteException;
 
     // master inspect
     public int addVM(int i, boolean b) throws RemoteException;

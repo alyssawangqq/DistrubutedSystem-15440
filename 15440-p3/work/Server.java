@@ -60,28 +60,25 @@ class calculateRequestInterval implements Runnable{
 		    midNeeded = 5;
 		}else if(rps >= 20 && rps < 30) {
 		    frontNeeded = 3;
-		    midNeeded = 9;
+		    midNeeded = 8;
 		} else if(rps > 30) {
 		    frontNeeded = 3;
-		    midNeeded = 10;
+		    midNeeded = 9;
 		}
-		if(mn < midNeeded) {
+
+		if(mn <= midNeeded || fn <= frontNeeded) {
 		    for(int i = 0; i < midNeeded - mn; i++) {
-			server.pushToQueue(false);
-			if(server.SL.getStatusVM(midNeeded) == 
-			   Cloud.CloudOps.VMStatus.NonExistent){
-			    server.SL.startVM();
-			}
+		       server.pushToQueue(false);
 		    }
-		}
-		//int frontNeeded = (int)(rps/12);
-		if(fn < frontNeeded) {
 		    for(int i = 0; i < frontNeeded - fn; i++) {
-			server.pushToQueue(true);
-			if(server.SL.getStatusVM(frontNeeded) == 
-			   Cloud.CloudOps.VMStatus.NonExistent){
-			    server.SL.startVM();
-			}
+		       server.pushToQueue(true);
+		    }
+
+		    for(int i = 0; i < midNeeded-mn + frontNeeded-fn; i++) {
+		      if(server.SL.getStatusVM(mn + fn + 1 + i) ==
+		          Cloud.CloudOps.VMStatus.NonExistent){
+		            server.SL.startVM();
+		      }
 		    }
 		}
 	    }
@@ -360,8 +357,12 @@ public class Server extends UnicastRemoteObject implements IServer{
 	  System.err.println("shutDown!");
 	  IServer inst = null;
 	  try {
-	      if(isFront) inst = Server.<IServer>getInstance(ip, port, "FrontTier" + id);
-	      else inst = Server.<IServer>getInstance(ip, port, "MidTier" + id);
+	      if(isFront) {
+		  inst = Server.<IServer>getInstance(ip, port, "FrontTier" + id);
+	      }
+	      else {
+		  inst = Server.<IServer>getInstance(ip, port, "MidTier" + id);
+	      }
 	      SL.interruptGetNext();
 	      SL.shutDown();
 	      UnicastRemoteObject.unexportObject(inst, true);
@@ -400,6 +401,11 @@ public class Server extends UnicastRemoteObject implements IServer{
 	readyToBeOpenQueue.push(b);
     }
 
+    public synchronized void removeVM(boolean b) throws RemoteException{
+	if(b) frontNumb--;
+	else midNumb--;
+    }
+
     public static void main ( String args[] ) throws Exception {
 	if (args.length != 2) throw new Exception("Need 2 args: <cloud_ip> <cloud_port>");
 
@@ -423,13 +429,12 @@ public class Server extends UnicastRemoteObject implements IServer{
 		SL.register_frontend();
 	    }
 	}else {
-	    SL.register_frontend(); // Regist Master TODO: consider change
+	    SL.register_frontend();
 	    cri = new calculateRequestInterval(10, server);
 	    new Thread(cri).start();
 	    //Master to Mid Tier
 	    SL.startVM(); // create the first mid tier
 	    readyToBeOpenQueue.push(false);
-	    midNumb += 1;
 	    if(Cache.main(args)){
 		System.err.println("regist Cach success");
 	    }else {
@@ -580,8 +585,19 @@ public class Server extends UnicastRemoteObject implements IServer{
 		    vmProp.lastProcessTime = vmProp.date.getTime();
 		    //System.err.println("tier add time" + (vmProp.lastProcessTime - test_record));
 		}else {
-		    SL.unregister_frontend();
-		    if(master.getVMNumb() > 2) shutDownVM(vmProp.myID, true, ip, port); // Numb and Number T T
+		    if(master.getVMNumb() > 2) {
+			SL.unregister_frontend();
+			master.removeVM(true);
+			shutDownVM(vmProp.myID, true, ip, port); // Numb and Number T T
+		    }else {
+			Cloud.FrontEndOps.Request r = SL.getNextRequest();
+			int length = SL.getQueueLength();
+			if(length >= 0)  master.tellMasterNewReq(1);
+			Request req = new Request(r, vmProp.date.getTime());
+			master.addRequest(req);
+			vmProp.date = new Date();
+		    	vmProp.lastProcessTime = vmProp.date.getTime();
+		    }
 		}
 	    }else if(!vmProp.isFrontTier) {
 		vmProp.date = new Date();
@@ -615,7 +631,16 @@ public class Server extends UnicastRemoteObject implements IServer{
 			//System.err.println("tier process time" + (vmProp.lastProcessTime - test_record));
 		    }
 		}else {
-		    if(master.getVMNumb() > 2) shutDownVM(vmProp.myID, false, ip, port);
+		    if(master.getVMNumb() > 2) {
+			shutDownVM(vmProp.myID, false, ip, port);
+			master.removeVM(false);
+		    }else {
+			    Request r = master.pollRequest();
+			    if(r == null) continue; // TODO: why r will be null
+			    SL.processRequest(r._r, cache);
+			    vmProp.date = new Date();
+			    vmProp.lastProcessTime = vmProp.date.getTime();
+		    }
 		}
 	    }
 	}
